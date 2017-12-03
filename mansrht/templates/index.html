@@ -1,0 +1,17 @@
+{% extends "man.html" %}
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-md-6">
+      <h1>man</h1>
+      <p>
+        You're seeing this page because the admin has not configured the
+        default wiki yet. If you are an admin, ensure your SSH keys are
+        configured for your account on meta.sr.ht, then push to
+        <code>{{repo_uri()}}</code>.
+      </p>
+      <p>Set the contents of the home page by writing <code>index.md</code>.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

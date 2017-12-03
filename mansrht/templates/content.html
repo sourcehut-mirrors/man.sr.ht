@@ -1,0 +1,65 @@
+{% extends "man.html" %}
+{% block title %}
+{% if title %}
+<title>{{ title }} - man.sr.ht</title>
+{% else %}
+<title>man.sr.ht</title>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-md-7">
+      <h1>{{ title }}</h1>
+      {{ content }}
+    </div>
+    <div class="col-md-5">
+      <h3>Table of Contents</h3>
+      <ul style="list-style: none; padding-left: 0;">
+        {% macro toc_entry(entry, depth) %}
+        <li>
+          <a href="#{{ entry.id }}">{{ entry.name }}</a>
+          {% if len(entry.children) > 0 %}
+          <ul style="list-style: none; padding-left: {{ depth + 1 }}rem">
+            {% for child in entry.children %}
+              {{ toc_entry(child, depth + 1) }}
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </li>
+        {% endmacro %}
+        {% for entry in toc %}
+          {{ toc_entry(entry, 0) }}
+        {% endfor %}
+      </ul>
+      <div class="pull-right" style="margin-bottom: 1rem">
+        <a href="#">Edit page</a>
+      </div>
+      <h4>This commit</h4>
+      <div class="clearfix"></div>
+      <div class="card" style="padding: 0.25rem; border: none; border-radius: 0; margin-bottom: 0.5rem">
+<pre class="card-text">commit {{commit.id}}
+Author: {{commit.author.name}} &lt;{{ commit.author.email }}&gt;
+Date:   {{ctime.isoformat()}}
+
+{{commit.message.rstrip("\n")}}</pre>
+      </div>
+      <dl>
+        <dt>Clone this wiki</dt>
+        <dd>
+          <a href="#">{{repo_uri()}}</a><br />
+          <a href="#">https://man.sr.ht/root.git</a><br />
+          <a href="#">git://man.sr.ht/root.git</a>
+        </dd>
+      </dl>
+      <!--
+      <div class="row">
+        <div class="col-8 offset-2">
+          <a href="#" class="btn btn-default btn-block">Manage your wiki</a>
+        </div>
+      </div>
+      -->
+    </div>
+  </div>
+</div>
+{% endblock %}
