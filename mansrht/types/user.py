@@ -11,6 +11,7 @@ class User(Base):
     oauth_token_expires = sa.Column(sa.DateTime, nullable=False)
     oauth_token_scopes = sa.Column(sa.String, nullable=False, default="")
     email = sa.Column(sa.String(256), nullable=False)
+    admin = sa.Column(sa.Boolean, nullable=False)
 
     def __repr__(self):
         return '<User {} {}>'.format(self.id, self.username)

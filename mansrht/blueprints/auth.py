@@ -65,6 +65,7 @@ def oauth_callback():
         db.session.add(user)
     user.username = json.get("username")
     user.email = json.get("email")
+    user.admin = json.get("admin")
     user.oauth_token = token
     user.oauth_token_expires = expires
     user.oauth_token_scopes = scopes
