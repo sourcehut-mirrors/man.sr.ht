@@ -53,7 +53,7 @@ def inject():
             User.query.filter(User.id == current_user.id).first()
         ) if current_user else None,
         "repo_uri": lambda user=None, wiki=None: (
-            "{}@{}/{}".format(
+            "{}@{}:{}".format(
                 git_user.split(":")[0],
                 domain,
                 "~{}/{}".format(user, wiki) if user and wiki else "root.git"

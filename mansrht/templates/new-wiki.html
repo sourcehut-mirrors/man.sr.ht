@@ -1,0 +1,18 @@
+{% extends "man.html" %}
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-md-6">
+      <h1>index</h1>
+      <p>
+        You've successfully created your wiki, but it does not have any content
+        yet. Your repository is now available at
+        <code>{{repo_uri(wiki.owner.username, wiki.name)}}</code>.
+        To populate the index page, clone the repository and add an
+        <code>index.md</code> file. Commit it and push to the master branch and
+        you'll see the changes here.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

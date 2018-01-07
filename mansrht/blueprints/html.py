@@ -1,6 +1,11 @@
 from flask import Blueprint, render_template, abort, request, redirect
+from flask_login import current_user
 from srht.config import cfg
 from srht.markdown import markdown, extract_toc
+from srht.validation import Validation
+from mansrht.decorators import loginrequired
+from mansrht.types import User, Wiki
+from mansrht.wikis import create_wiki
 from datetime import datetime
 import pygit2
 import os
@@ -8,11 +13,10 @@ import os
 html = Blueprint('html', __name__)
 repo_path = cfg("man.sr.ht", "repo-path")
 
-def content(repo, path):
+def content(repo, path, wiki=None):
     master = repo.branches.get("master")
     if not master:
-        # TODO: show reason maybe
-        abort(404)
+        return render_template("new-wiki.html", wiki=wiki)
     commit = repo.get(master.target)
     tree = commit.tree
     path = os.path.split(path) if path else tuple()
@@ -38,7 +42,8 @@ def content(repo, path):
     ctime = datetime.fromtimestamp(commit.commit_time)
     toc = extract_toc(html)
     return render_template("content.html",
-            content=html, title=title, commit=commit, ctime=ctime, toc=toc)
+            content=html, title=title, commit=commit, ctime=ctime, toc=toc,
+            wiki=wiki)
 
 @html.route("/")
 @html.route("/<path:path>")
@@ -49,3 +54,33 @@ def root_content(path=None):
         # Fallback page
         return render_template("index.html")
     return content(repo, path)
+
+@html.route("/<owner_name>/<wiki_name>")
+@html.route("/<owner_name>/<wiki_name>/")
+@html.route("/<owner_name>/<wiki_name>/<path:path>")
+def user_content(owner_name, wiki_name, path=None):
+    owner = User.query.filter(User.username == owner_name[1:]).first()
+    if not owner:
+        abort(404)
+    wiki = (Wiki.query
+            .filter(Wiki.owner_id == owner.id)
+            .filter(Wiki.name.ilike(wiki_name))
+        ).first()
+    if not wiki:
+        abort(404)
+    repo = pygit2.Repository(os.path.join(wiki.path))
+    return content(repo, path, wiki)
+
+@html.route("/wiki/create")
+@loginrequired
+def create_GET():
+    return render_template("create.html")
+
+@html.route("/wiki/create", methods=["POST"])
+@loginrequired
+def create_POST():
+    valid = Validation(request)
+    wiki = create_wiki(valid, current_user)
+    if not wiki:
+        return render_template("create.html", **valid.kwargs)
+    return redirect("/~{}/{}".format(current_user.username, wiki.name))
