@@ -1,5 +1,5 @@
 #
-# todo.sr.ht config
+# man.sr.ht config
 
 [server]
 #
@@ -41,7 +41,7 @@ man=http://man.sr.ht.local
 
 [man.sr.ht]
 git-user=man:man
-repo-path=/var/lib/git/man
+repo-path=/var/lib/man
 
 [meta.sr.ht]
 oauth-client-id=CHANGEME
