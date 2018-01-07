@@ -6,7 +6,7 @@ from srht.config import cfg, load_config
 load_config("man")
 from srht.database import DbSession
 db = DbSession(cfg("sr.ht", "connection-string"))
-from gitsrht.types import User
+from mansrht.types import User
 db.init()
 
 sys.stderr.write(str(sys.argv) + "\n")

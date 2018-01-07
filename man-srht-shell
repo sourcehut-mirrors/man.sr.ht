@@ -22,6 +22,7 @@ db.init()
 def log(s, *args):
     sys.stderr.write("{} {}\n".format(datetime.now().isoformat(),
         s.format(*args) if isinstance(s, str) else str(s)))
+    sys.stderr.flush()
 
 root = "{}://{}".format(cfg("server", "protocol"), cfg("server", "domain"))
 repos = cfg("man.sr.ht", "repo-path")
@@ -51,17 +52,16 @@ if len(cmd) < 1 or not cmd[0] in valid_commands:
 os.chdir(repos)
 path = os.path.abspath(cmd[-1])
 if not path.startswith(repos):
-    sys.stderr.write("Access denied")
+    log("Access denied")
     sys.exit(128)
 cmd[-1] = path
-_cmd = " ".join(shlex.quote(arg) for arg in cmd)
 
 if not user.admin:
-    print("TODO: wikis")
+    print("TODO: look up wiki")
     sys.exit(128)
 
 # TODO: look up repo
 
-log("Executing {}", _cmd)
+log("Executing {}", " ".join(cmd))
 sys.stderr.close()
-os.execv("/usr/bin/git-shell", ["/usr/bin/git-shell", "-c", _cmd])
+os.execvp(cmd[0], cmd)

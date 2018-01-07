@@ -14,21 +14,23 @@ setup(
   packages = [
       'mansrht',
       'mansrht.types',
-      'mansrht.blueprints',
-      'mansrht.alembic',
-      'mansrht.alembic.versions'
+      'mansrht.blueprints'
   ],
   version = ver,
   description = 'man.sr.ht website',
   author = 'Drew DeVault',
   author_email = 'sir@cmpwn.com',
   url = 'https://git.sr.ht/~sircmpwn/man.sr.ht',
-  install_requires = ['srht', 'flask-login', 'alembic'],
+  install_requires = ['srht', 'flask-login'],
   license = 'AGPL-3.0',
   package_data={
       'mansrht': [
           'templates/*.html',
           'static/*'
       ]
-  }
+  },
+  scripts = [
+      'man-srht-keys',
+      'man-srht-shell',
+  ]
 )
