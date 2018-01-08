@@ -7,6 +7,7 @@ from mansrht.decorators import loginrequired
 from mansrht.types import User, Wiki
 from mansrht.wikis import create_wiki
 from datetime import datetime
+from urllib.parse import urlparse, urlunparse
 import pygit2
 import os
 
@@ -19,6 +20,8 @@ def content(repo, path, wiki=None):
         return render_template("new-wiki.html", wiki=wiki)
     commit = repo.get(master.target)
     tree = commit.tree
+    _path = path
+    print(_path)
     path = os.path.split(path) if path else tuple()
     path = tuple(p for p in path if p != "")
     for entry in path:
@@ -32,7 +35,13 @@ def content(repo, path, wiki=None):
     if tree.type != "blob":
         tree = repo.get(tree.id)
         if "index.md" in tree:
+            # redirect directories to / so links work right
             tree = tree["index.md"]
+            url = urlparse(request.url)
+            if url.path and url.path[-1] != "/":
+                url = list(url)
+                url[2] += "/"
+                return redirect(urlunparse(url))
         else:
             abort(404)
     blob = repo.get(tree.id)
@@ -55,11 +64,10 @@ def root_content(path=None):
         return render_template("index.html")
     return content(repo, path)
 
-@html.route("/<owner_name>/<wiki_name>")
-@html.route("/<owner_name>/<wiki_name>/")
-@html.route("/<owner_name>/<wiki_name>/<path:path>")
+@html.route("/~<owner_name>/<wiki_name>")
+@html.route("/~<owner_name>/<wiki_name>/<path:path>")
 def user_content(owner_name, wiki_name, path=None):
-    owner = User.query.filter(User.username == owner_name[1:]).first()
+    owner = User.query.filter(User.username == owner_name).first()
     if not owner:
         abort(404)
     wiki = (Wiki.query
