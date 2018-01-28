@@ -56,7 +56,7 @@ def inject():
             "{}@{}:{}".format(
                 git_user.split(":")[0],
                 domain,
-                "~{}/{}".format(user, wiki) if user and wiki else "root.git"
+                "~{}/{}".format(user, wiki) if user and wiki else "root"
             )
         ),
         "now": datetime.now

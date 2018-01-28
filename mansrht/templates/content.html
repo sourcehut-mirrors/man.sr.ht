@@ -53,10 +53,10 @@ Date:   {{ctime.isoformat()}}
         <dd>
         {% if wiki %}
           <a href="ssh://{{repo_uri(wiki.owner.username, wiki.name)}}">{{repo_uri(wiki.owner.username, wiki.name)}}</a><br />
-          <a href="{{root}}/~{{wiki.owner.username}}/{{wiki.name}}.git">{{root}}/~{{wiki.owner.username}}/{{wiki.name}}.git</a><br />
+          <a href="{{root}}/~{{wiki.owner.username}}/{{wiki.name}}">{{root}}/~{{wiki.owner.username}}/{{wiki.name}}</a><br />
         {% else %}
           <a href="ssh://{{repo_uri()}}">{{repo_uri()}}</a><br />
-          <a href="{{root}}/root.git">{{root}}/root.git</a><br />
+          <a href="{{root}}/root">{{root}}/root</a><br />
         {% endif %}
         </dd>
       </dl>
