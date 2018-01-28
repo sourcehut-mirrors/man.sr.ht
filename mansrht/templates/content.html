@@ -52,11 +52,11 @@ Date:   {{ctime.isoformat()}}
         <dt>Clone this wiki</dt>
         <dd>
         {% if wiki %}
-          <a href="#">{{repo_uri(wiki.owner.username, wiki.name)}}</a><br />
-          <a href="#">{{root}}/~{{wiki.owner.username}}/{{wiki.name}}.git</a><br />
+          <a href="ssh://{{repo_uri(wiki.owner.username, wiki.name)}}">{{repo_uri(wiki.owner.username, wiki.name)}}</a><br />
+          <a href="{{root}}/~{{wiki.owner.username}}/{{wiki.name}}.git">{{root}}/~{{wiki.owner.username}}/{{wiki.name}}.git</a><br />
         {% else %}
-          <a href="#">{{repo_uri()}}</a><br />
-          <a href="#">{{root}}/root.git</a><br />
+          <a href="ssh://{{repo_uri()}}">{{repo_uri()}}</a><br />
+          <a href="{{root}}">{{root}}/root.git</a><br />
         {% endif %}
         </dd>
       </dl>
