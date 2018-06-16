@@ -67,6 +67,13 @@ Date:   {{ctime.isoformat()}}
         </div>
       </div>
       -->
+      {% if is_root and current_user %}
+      <hr />
+      <a href="/wiki/create" class="btn btn-primary btn-block">
+        Create a wiki
+        <i class="fa fa-caret-right"></i>
+      </a>
+      {% endif %}
     </div>
   </div>
 </div>

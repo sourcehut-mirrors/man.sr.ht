@@ -14,7 +14,7 @@ import os
 html = Blueprint('html', __name__)
 repo_path = cfg("man.sr.ht", "repo-path")
 
-def content(repo, path, wiki=None):
+def content(repo, path, wiki=None, **kwargs):
     master = repo.branches.get("master")
     if not master:
         return render_template("new-wiki.html", wiki=wiki)
@@ -51,7 +51,7 @@ def content(repo, path, wiki=None):
     toc = extract_toc(html)
     return render_template("content.html",
             content=html, title=title, commit=commit, ctime=ctime, toc=toc,
-            wiki=wiki)
+            wiki=wiki, **kwargs)
 
 @html.route("/")
 @html.route("/<path:path>")
@@ -61,7 +61,7 @@ def root_content(path=None):
     except:
         # Fallback page
         return render_template("index.html")
-    return content(repo, path)
+    return content(repo, path, is_root=True)
 
 @html.route("/~<owner_name>/<wiki_name>")
 @html.route("/~<owner_name>/<wiki_name>/<path:path>")

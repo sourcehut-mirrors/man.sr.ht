@@ -8,7 +8,7 @@
     <section class="col-md-6">
       <h3 id="create">Create new wiki</h3>
       <form method="POST" action="/wiki/create">
-        <div class="form-group {{valid.cls("name")}}">
+        <div class="form-group">
           <label for="name">Name</label>
           <input
             {% if another %}
@@ -17,11 +17,14 @@
             type="text"
             name="name"
             id="name"
-            class="form-control"
+            class="form-control {{valid.cls("name")}}"
             value="{{ repo_name or "" }}" />
           {{valid.summary("name")}}
         </div>
-        <button type="submit" class="btn btn-default">Create</button>
+        <button type="submit" class="btn btn-primary">
+          Create
+          <i class="fa fa-caret-right"></i>
+        </button>
       </form>
     </section>
   </div>
