@@ -21,7 +21,6 @@ def content(repo, path, wiki=None):
     commit = repo.get(master.target)
     tree = commit.tree
     _path = path
-    print(_path)
     path = os.path.split(path) if path else tuple()
     path = tuple(p for p in path if p != "")
     for entry in path:

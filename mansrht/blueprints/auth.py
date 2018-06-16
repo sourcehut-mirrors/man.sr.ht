@@ -39,7 +39,6 @@ def oauth_callback():
         "exchange": exchange,
     })
     if r.status_code != 200:
-        print(r.text)
         return render_template("oauth-error.html",
             details="Error occured retrieving OAuth token. Try again.")
     json = r.json()
