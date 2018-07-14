@@ -16,7 +16,8 @@ load_config("man")
 from srht.validation import Validation
 from srht.database import DbSession
 db = DbSession(cfg("sr.ht", "connection-string"))
-from mansrht.types import User
+from mansrht.access import has_access, UserAccess
+from mansrht.types import User, Wiki
 db.init()
 
 def log(s, *args):
@@ -56,11 +57,20 @@ if not path.startswith(repos):
     sys.exit(128)
 cmd[-1] = path
 
-if not user.admin:
-    print("TODO: look up wiki")
-    sys.exit(128)
+if path == os.path.join(repos, "root"):
+    if not user.admin:
+        sys.exit(128)
+else:
+    wiki = Wiki.query.filter(Wiki.path == path).first()
+    if not wiki:
+        sys.exit(128)
 
-# TODO: look up repo
+    if cmd[0] == "git-receive-pack":
+        if not has_access(wiki, UserAccess.write, user):
+            sys.exit(128)
+    else:
+        if not has_access(wiki, UserAccess.read, user):
+            sys.exit(128)
 
 log("Executing {}", " ".join(cmd))
 sys.stderr.close()
