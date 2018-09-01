@@ -9,7 +9,6 @@ packages:
   - python-celery
   - python-redis
   - python-flask-login
-  - builds.sr.ht
   - rsync
   - pacman-contrib
 sources:
