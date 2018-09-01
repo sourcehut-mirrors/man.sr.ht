@@ -26,6 +26,7 @@ setup(
   package_data={
       'mansrht': [
           'templates/*.html',
+          'static/icons/*'
           'static/*'
       ]
   },
