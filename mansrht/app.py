@@ -48,7 +48,7 @@ class ManApp(SrhtFlask):
             user = User()
             db.session.add(user)
         user.username = profile.get("username")
-        user.admin = json.get("admin")
+        user.admin = profile.get("admin")
         user.email = profile.get("email")
         user.oauth_token = exchange["token"]
         user.oauth_token_expires = exchange["expires"]
