@@ -11,11 +11,10 @@ except Exception as ex:
 import requests
 import shlex
 from datetime import datetime
-from srht.config import cfg, load_config
-load_config("man")
+from srht.config import cfg
 from srht.validation import Validation
 from srht.database import DbSession
-db = DbSession(cfg("sr.ht", "connection-string"))
+db = DbSession(cfg("man.sr.ht", "connection-string"))
 from mansrht.access import has_access, UserAccess
 from mansrht.types import User, Wiki
 db.init()
@@ -25,7 +24,7 @@ def log(s, *args):
         s.format(*args) if isinstance(s, str) else str(s)))
     sys.stderr.flush()
 
-root = "{}://{}".format(cfg("server", "protocol"), cfg("server", "domain"))
+root = cfg("man.sr.ht", "origin")
 repos = cfg("man.sr.ht", "repo-path")
 
 _cmd = os.environ.get("SSH_ORIGINAL_COMMAND")

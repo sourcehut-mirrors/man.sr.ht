@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, abort, request, redirect
 from flask_login import current_user
 from srht.config import cfg
+from srht.flask import loginrequired
 from srht.markdown import markdown, extract_toc
 from srht.validation import Validation
-from mansrht.decorators import loginrequired
 from mansrht.types import User, Wiki
 from mansrht.wikis import create_wiki
 from datetime import datetime
