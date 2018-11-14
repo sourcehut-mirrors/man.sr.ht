@@ -1,6 +1,7 @@
 from srht.flask import SrhtFlask
 from srht.config import cfg
 from srht.database import DbSession
+from urllib.parse import urlparse
 
 db = DbSession(cfg("man.sr.ht", "connection-string"))
 
@@ -32,11 +33,12 @@ class ManApp(SrhtFlask):
         @self.context_processor
         def inject():
             git_user = cfg("man.sr.ht", "git-user")
+            origin = urlparse(cfg("man.sr.ht", "origin"))
             return {
                 "repo_uri": lambda user=None, wiki=None: (
                     "{}@{}:{}".format(
                         git_user.split(":")[0],
-                        cfg("man.sr.ht", "origin"),
+                        origin.netloc,
                         "~{}/{}".format(user, wiki) if user and wiki else "root")
                 ),
                 "now": datetime.now

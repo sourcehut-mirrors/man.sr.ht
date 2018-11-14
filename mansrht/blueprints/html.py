@@ -64,6 +64,7 @@ def root_content(path=None):
     return content(repo, path, is_root=True)
 
 @html.route("/~<owner_name>/<wiki_name>")
+@html.route("/~<owner_name>/<wiki_name>/")
 @html.route("/~<owner_name>/<wiki_name>/<path:path>")
 def user_content(owner_name, wiki_name, path=None):
     owner = User.query.filter(User.username == owner_name).first()
