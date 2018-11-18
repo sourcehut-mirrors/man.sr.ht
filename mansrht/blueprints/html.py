@@ -1,3 +1,4 @@
+from bs4 import BeautifulSoup
 from flask import Blueprint, render_template, abort, request, redirect
 from flask_login import current_user
 from srht.config import cfg
@@ -7,6 +8,7 @@ from srht.validation import Validation
 from mansrht.types import User, Wiki
 from mansrht.wikis import create_wiki
 from datetime import datetime
+from jinja2 import Markup
 from urllib.parse import urlparse, urlunparse
 import pygit2
 import os
@@ -14,7 +16,7 @@ import os
 html = Blueprint('html', __name__)
 repo_path = cfg("man.sr.ht", "repo-path")
 
-def content(repo, path, wiki=None, **kwargs):
+def content(repo, path, wiki=None, is_root=False, **kwargs):
     master = repo.branches.get("master")
     if not master:
         return render_template("new-wiki.html", wiki=wiki)
@@ -41,17 +43,33 @@ def content(repo, path, wiki=None, **kwargs):
                 url = list(url)
                 url[2] += "/"
                 return redirect(urlunparse(url))
+        elif "index.html" in tree and is_root:
+            tree = tree["index.html"]
+            url = urlparse(request.url)
+            if url.path and url.path[-1] != "/":
+                url = list(url)
+                url[2] += "/"
+                return redirect(urlunparse(url))
         else:
             abort(404)
     blob = repo.get(tree.id)
+    if blob.is_binary:
+        abort(404)
     md = blob.data.decode()
-    html = markdown(md, ["h1", "h2", "h3", "h4", "h5"], baselevel=3)
+    if tree.name.endswith(".md"):
+        html = markdown(md, ["h1", "h2", "h3", "h4", "h5"], baselevel=3)
+    else:
+        html = Markup(md)
     title = path[-1].rstrip(".md") if path else "index"
     ctime = datetime.fromtimestamp(commit.commit_time)
     toc = extract_toc(html)
+    soup = BeautifulSoup(str(html), "html5lib")
+    h3 = soup.find("h3")
+    if h3:
+        title = h3.text
     return render_template("content.html",
             content=html, title=title, commit=commit, ctime=ctime, toc=toc,
-            wiki=wiki, **kwargs)
+            wiki=wiki, is_root=is_root, **kwargs)
 
 @html.route("/")
 @html.route("/<path:path>")
