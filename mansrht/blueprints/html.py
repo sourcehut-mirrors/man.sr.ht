@@ -19,7 +19,10 @@ repo_path = cfg("man.sr.ht", "repo-path")
 def content(repo, path, wiki=None, is_root=False, **kwargs):
     master = repo.branches.get("master")
     if not master:
-        return render_template("new-wiki.html", wiki=wiki)
+        if wiki:
+            return render_template("new-wiki.html", wiki=wiki)
+        # Root wiki with no content.
+        return render_template("index.html")
     commit = repo.get(master.target)
     tree = commit.tree
     _path = path
