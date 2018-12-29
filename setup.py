@@ -39,6 +39,8 @@ setup(
   name = 'mansrht',
   packages = [
       'mansrht',
+      'mansrht.alembic',
+      'mansrht.alembic.versions',
       'mansrht.types',
       'mansrht.blueprints'
   ],
