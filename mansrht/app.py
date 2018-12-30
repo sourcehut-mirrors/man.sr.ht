@@ -1,34 +1,28 @@
-from srht.flask import SrhtFlask
+from mansrht.types import User
 from srht.config import cfg
 from srht.database import DbSession
+from srht.flask import SrhtFlask
+from srht.oauth import AbstractOAuthService
 from urllib.parse import urlparse
 
 db = DbSession(cfg("man.sr.ht", "connection-string"))
-
-from mansrht.types import User, UserType
-
 db.init()
 
-from datetime import datetime
+client_id = cfg("man.sr.ht", "oauth-client-id")
+client_secret = cfg("man.sr.ht", "oauth-client-secret")
+
+class ManOAuthService(AbstractOAuthService):
+    def __init__(self):
+        super().__init__(client_id, client_secret, user_class=User)
 
 class ManApp(SrhtFlask):
     def __init__(self):
-        super().__init__("man.sr.ht", __name__)
+        super().__init__("man.sr.ht", __name__, oauth_service=ManOAuthService())
 
         from mansrht.blueprints.html import html
         self.register_blueprint(html)
 
         self.url_map.strict_slashes = False
-
-        meta_client_id = cfg("man.sr.ht", "oauth-client-id")
-        meta_client_secret = cfg("man.sr.ht", "oauth-client-secret")
-        self.configure_meta_auth(meta_client_id, meta_client_secret,
-                base_scopes=["profile", "keys"])
-
-        @self.login_manager.user_loader
-        def user_loader(username):
-            # TODO: Switch to a session token
-            return User.query.filter(User.username == username).one_or_none()
 
         @self.context_processor
         def inject():
@@ -42,22 +36,6 @@ class ManApp(SrhtFlask):
                         "~{}/{}".format(
                             user, wiki) if user and wiki else "root")
                 ),
-                "now": datetime.now
             }
-
-    def lookup_or_register(self, exchange, profile, scopes):
-        user = User.query.filter(
-                User.username == profile["name"]).one_or_none()
-        if not user:
-            user = User()
-            db.session.add(user)
-        user.username = profile["name"]
-        user.email = profile["email"]
-        user.user_type = UserType(profile["user_type"])
-        user.oauth_token = exchange["token"]
-        user.oauth_token_expires = exchange["expires"]
-        user.oauth_token_scopes = scopes
-        db.session.commit()
-        return user
 
 app = ManApp()
