@@ -41,8 +41,8 @@ setup(
       'mansrht',
       'mansrht.alembic',
       'mansrht.alembic.versions',
-      'mansrht.types',
       'mansrht.blueprints'
+      'mansrht.types',
   ],
   version = ver,
   description = 'man.sr.ht website',
@@ -60,6 +60,9 @@ setup(
   },
   scripts = [
       'man-srht-keys',
+      'mansrht-keys',
       'man-srht-shell',
+      'mansrht-shell',
+      'mansrht-migrate',
   ]
 )
