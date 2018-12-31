@@ -41,7 +41,7 @@ setup(
       'mansrht',
       'mansrht.alembic',
       'mansrht.alembic.versions',
-      'mansrht.blueprints'
+      'mansrht.blueprints',
       'mansrht.types',
   ],
   version = ver,
