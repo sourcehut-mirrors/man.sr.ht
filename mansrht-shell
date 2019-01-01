@@ -11,12 +11,13 @@ except Exception as ex:
 import requests
 import shlex
 from datetime import datetime
-from srht.config import cfg
-from srht.validation import Validation
-from srht.database import DbSession
-db = DbSession(cfg("man.sr.ht", "connection-string"))
 from mansrht.access import has_access, UserAccess
 from mansrht.types import User, Wiki
+from srht.config import cfg
+from srht.database import DbSession
+from srht.oauth import UserType
+from srht.validation import Validation
+db = DbSession(cfg("man.sr.ht", "connection-string"))
 db.init()
 
 def log(s, *args):
@@ -57,7 +58,7 @@ if not path.startswith(repos):
 cmd[-1] = path
 
 if path == os.path.join(repos, "root"):
-    if cmd[0] == "git-receive-pack" and not user.admin:
+    if cmd[0] == "git-receive-pack" and user.user_type != UserType.admin:
         sys.exit(128)
 else:
     wiki = Wiki.query.filter(Wiki.path == path).first()
