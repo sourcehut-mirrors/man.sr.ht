@@ -67,8 +67,8 @@ def content(repo, path, wiki=None, is_root=False, **kwargs):
     ctime = datetime.fromtimestamp(commit.commit_time)
     toc = extract_toc(html)
     soup = BeautifulSoup(str(html), "html5lib")
-    h3 = soup.find("h2")
-    if h3:
+    h2 = soup.find("h2")
+    if h2:
         title = h2.text
     return render_template("content.html",
             content=html, title=title, commit=commit, ctime=ctime, toc=toc,
