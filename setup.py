@@ -59,9 +59,7 @@ setup(
       ]
   },
   scripts = [
-      'man-srht-keys',
       'mansrht-keys',
-      'man-srht-shell',
       'mansrht-shell',
       'mansrht-migrate',
   ]
