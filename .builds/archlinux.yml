@@ -27,5 +27,6 @@ tasks:
       cd ~/$project
       git describe --exact-match HEAD || complete-build
   - publish: |
+      cd sr.ht-pkgbuilds
       echo "StrictHostKeyChecking=no" >> ~/.ssh/config
       ./pkgkit upload "$remote" "$remote_path" sr.ht $project
