@@ -5,8 +5,9 @@ from srht.config import cfg
 from srht.flask import loginrequired
 from srht.markdown import markdown, extract_toc
 from srht.validation import Validation
+from mansrht.access import UserAccess, check_access
 from mansrht.types import User, Wiki
-from mansrht.wikis import create_wiki
+from mansrht.wikis import create_wiki, delete_wiki
 from datetime import datetime
 from jinja2 import Markup
 from urllib.parse import urlparse, urlunparse
@@ -98,6 +99,21 @@ def user_content(owner_name, wiki_name, path=None):
         abort(404)
     repo = pygit2.Repository(os.path.join(wiki.path))
     return content(repo, path, wiki)
+
+@html.route("/manage/~<owner_name>/<wiki_name>/delete")
+@loginrequired
+def manage_delete(owner_name, wiki_name):
+    # check_access() guarantees owner and wiki are valid.
+    owner, wiki = check_access("~{}".format(owner_name), wiki_name, UserAccess.manage)
+    return render_template("delete.html", owner=owner, wiki=wiki)
+
+@html.route("/manage/~<owner_name>/<wiki_name>/delete", methods=["POST"])
+@loginrequired
+def manage_delete_POST(owner_name, wiki_name):
+    # check_access() guarantees owner and wiki are valid.
+    owner, wiki = check_access("~{}".format(owner_name), wiki_name, UserAccess.manage)
+    delete_wiki(wiki)
+    return redirect("/")
 
 @html.route("/wiki/create")
 @loginrequired

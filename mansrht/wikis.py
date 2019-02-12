@@ -41,3 +41,14 @@ def create_wiki(valid, owner):
 
     db.session.commit()
     return wiki
+
+def delete_wiki(wiki):
+    try:
+        shutil.rmtree(wiki.path)
+    except FileNotFoundError:
+        # If it's not found then we don't have to do anything
+        # to the filesystem.
+        pass
+
+    db.session.delete(wiki)
+    db.session.commit()

@@ -59,18 +59,20 @@ Date:   {{ctime.isoformat()}}
         {% endif %}
         </dd>
       </dl>
-      <!--
-      <div class="row">
-        <div class="col-8 offset-2">
-          <a href="#" class="btn btn-default btn-block">Manage your wiki</a>
-        </div>
-      </div>
-      -->
-      {% if is_root and current_user %}
-      <hr />
-      <a href="/wiki/create" class="btn btn-primary btn-block">
-        Create a wiki {{icon("caret-right")}}
-      </a>
+      {% if current_user %}
+        <hr />
+        {% if wiki and wiki.owner.username == current_user.username %}
+        <a
+          href="{{ url_for("html.manage_delete",
+            owner_name=wiki.owner.username, wiki_name=wiki.name) }}"
+          class="btn btn-default btn-block"
+        >Manage your wiki</a>
+        {% endif %}
+        {% if is_root %}
+          <a href="/wiki/create" class="btn btn-primary btn-block">
+            Create a wiki {{icon("caret-right")}}
+          </a>
+        {% endif %}
       {% endif %}
     </div>
   </div>

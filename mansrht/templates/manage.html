@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+{% block body %}
+<!--
+<h2>Wiki settings</h2>
+<section>
+  <p>
+    You can manage settings for
+    <strong>~{{ owner.username }}/{{ wiki.name }}</strong> here.</p>
+</section>
+-->
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-12 header-tabbed">
+      {% block tabs %}
+      <ul class="nav nav-tabs">
+        <li class="nav-item">
+          <a class="nav-link" href="/~{{ owner.username }}/{{ wiki.name }}">
+            {{icon("caret-left")}} back
+          </a>
+        </li>
+        <li class="nav-item">
+          <!-- Only option at the moment so we assume it's active. -->
+          <a
+            class="nav-link active"
+            href="{{ url_for("html.manage_delete",
+              owner_name=owner.username, wiki_name=wiki.name) }}"
+          > delete </a>
+        </li>
+      </ul>
+      {% endblock %}
+    </div>
+  </div>
+</div>
+<div class="container">
+  {% block content %}{% endblock %}
+</div>
+{% endblock %}
