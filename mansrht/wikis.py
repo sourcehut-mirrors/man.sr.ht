@@ -15,7 +15,7 @@ def validate_name(valid, owner, wiki_name):
             "Name must match [a-z._-][a-z0-9._-]*", field="name")
     existing = (Wiki.query
             .filter(Wiki.owner_id == owner.id)
-            .filter(Wiki.name.ilike(wiki_name))
+            .filter(Wiki.name.like(wiki_name))
             .first())
     valid.expect(not existing, "This name is already in use.", field="name")
     return None

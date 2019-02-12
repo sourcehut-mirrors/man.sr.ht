@@ -25,7 +25,6 @@ def content(repo, path, wiki=None, is_root=False, **kwargs):
         return render_template("index.html")
     commit = repo.get(master.target)
     tree = commit.tree
-    _path = path
     path = os.path.split(path) if path else tuple()
     path = tuple(p for p in path if p != "")
     for entry in path:
@@ -93,7 +92,7 @@ def user_content(owner_name, wiki_name, path=None):
         abort(404)
     wiki = (Wiki.query
             .filter(Wiki.owner_id == owner.id)
-            .filter(Wiki.name.ilike(wiki_name))
+            .filter(Wiki.name.like(wiki_name))
         ).first()
     if not wiki:
         abort(404)
