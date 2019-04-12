@@ -63,6 +63,10 @@ def content(repo, path, wiki=None, is_root=False, **kwargs):
         html = markdown(md, ["h1", "h2", "h3", "h4", "h5"], baselevel=3)
     else:
         html = Markup(md)
+    if current_user:
+        html = html.replace("{{{srht_username}}}", current_user.username)
+    else:
+        html = html.replace("{{{srht_username}}}", "USERNAME")
     title = path[-1].rstrip(".md") if path else "index"
     ctime = datetime.fromtimestamp(commit.commit_time)
     toc = extract_toc(html)
