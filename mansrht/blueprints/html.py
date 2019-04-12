@@ -60,6 +60,7 @@ def content(repo, path, wiki=None, is_root=False, **kwargs):
     if blob.is_binary:
         abort(404)
     md = blob.data.decode()
+    frontmatter = dict()
     if md.startswith("---\n"):
         try:
             end = md.index("---\n\n", 1)
