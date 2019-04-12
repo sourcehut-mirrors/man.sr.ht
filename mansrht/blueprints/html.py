@@ -13,6 +13,7 @@ from jinja2 import Markup
 from urllib.parse import urlparse, urlunparse
 import pygit2
 import os
+import yaml
 
 html = Blueprint('html', __name__)
 repo_path = cfg("man.sr.ht", "repo-path")
@@ -59,6 +60,22 @@ def content(repo, path, wiki=None, is_root=False, **kwargs):
     if blob.is_binary:
         abort(404)
     md = blob.data.decode()
+    if md.startswith("---\n"):
+        try:
+            end = md.index("---\n\n", 1)
+        except ValueError:
+            end = -1 # this is dumb, Guido
+        if end != -1:
+            frontmatter = md[4:end]
+            md = md[end+5:]
+    if frontmatter:
+        try:
+            frontmatter = yaml.safe_load(frontmatter)
+            if not isinstance(frontmatter, dict):
+                raise Exception()
+        except:
+            md = "<!-- Error parsing YAML frontmatter -->\n\n" + md
+            frontmatter = dict()
     if tree.name.endswith(".md"):
         html = markdown(md, ["h1", "h2", "h3", "h4", "h5"], baselevel=3)
     else:
@@ -70,13 +87,12 @@ def content(repo, path, wiki=None, is_root=False, **kwargs):
     title = path[-1].rstrip(".md") if path else "index"
     ctime = datetime.fromtimestamp(commit.commit_time)
     toc = extract_toc(html)
-    soup = BeautifulSoup(str(html), "html5lib")
-    h2 = soup.find("h2")
-    if h2:
-        title = h2.text
+    if "title" in frontmatter:
+        title = frontmatter["title"]
     return render_template("content.html",
             content=html, title=title, commit=commit, ctime=ctime, toc=toc,
-            wiki=wiki, is_root=is_root, **kwargs)
+            wiki=wiki, is_root=is_root, path=path, frontmatter=frontmatter,
+            **kwargs)
 
 @html.route("/")
 @html.route("/<path:path>")

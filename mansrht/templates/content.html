@@ -7,6 +7,26 @@
 {% endif %}
 {% endblock %}
 {% block content %}
+{% if not is_root or len(path) != 0 %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-12 header-tabbed">
+      <h2>
+        {% if wiki %}
+          {{wiki.owner.canonical_name}}/{{wiki.name}}/{{title}}
+        {% else %}
+          {{title}}
+        {% endif %}
+      </h2>
+      <ul class="nav nav-tabs">
+        <li class="nav-item">
+          <a class="nav-link active" href="/">article</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endif %}
 <div class="container">
   <div class="row flex-column-reverse flex-md-row">
     <div class="col-md-7">
