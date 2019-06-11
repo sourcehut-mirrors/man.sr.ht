@@ -28,73 +28,71 @@
 </div>
 {% endif %}
 <div class="container">
-  <div class="row flex-column-reverse flex-md-row">
-    <div class="col-md-7">
-      {{ content }}
+  <div class="toc">
+    {% if len(toc) != 0 %}
+    <h3>Table of Contents</h3>
+    <ul style="list-style: none; padding-left: 0;">
+      {% macro toc_entry(entry, depth) %}
+      <li>
+        <a href="#{{ entry.id }}">{{ entry.name }}</a>
+        {% if len(entry.children) > 0 %}
+        <ul style="list-style: none; padding-left: {{ depth + 1 }}rem">
+          {% for child in entry.children %}
+            {{ toc_entry(child, depth + 1) }}
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </li>
+      {% endmacro %}
+      {% for entry in toc %}
+        {{ toc_entry(entry, 0) }}
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {# TODO
+    <div class="pull-right" style="margin-bottom: 1rem">
+      <a href="#">Edit page</a>
     </div>
-    <div class="col-md-5">
-      {% if len(toc) != 0 %}
-      <h3>Table of Contents</h3>
-      <ul style="list-style: none; padding-left: 0;">
-        {% macro toc_entry(entry, depth) %}
-        <li>
-          <a href="#{{ entry.id }}">{{ entry.name }}</a>
-          {% if len(entry.children) > 0 %}
-          <ul style="list-style: none; padding-left: {{ depth + 1 }}rem">
-            {% for child in entry.children %}
-              {{ toc_entry(child, depth + 1) }}
-            {% endfor %}
-          </ul>
-          {% endif %}
-        </li>
-        {% endmacro %}
-        {% for entry in toc %}
-          {{ toc_entry(entry, 0) }}
-        {% endfor %}
-      </ul>
-      {% endif %}
-      {# TODO
-      <div class="pull-right" style="margin-bottom: 1rem">
-        <a href="#">Edit page</a>
-      </div>
-      #}
-      <h4>This commit</h4>
-      <div class="clearfix"></div>
-      <div class="card" style="padding: 0.25rem; border: none; border-radius: 0; margin-bottom: 0.5rem">
+    #}
+    <h4>This commit</h4>
+    <div class="clearfix"></div>
+    <div class="card" style="padding: 0.25rem; border: none; border-radius: 0; margin-bottom: 0.5rem">
 <pre class="card-text">commit {{commit.id}}
 Author: {{commit.author.name}} &lt;{{ commit.author.email }}&gt;
 Date:   {{ctime.isoformat()}}
 
 {{commit.message.rstrip("\n")}}</pre>
-      </div>
-      <dl>
-        <dt>Clone this wiki</dt>
-        <dd>
-        {% if wiki %}
-          <a href="ssh://{{repo_uri(wiki.owner.username, wiki.name)}}">{{repo_uri(wiki.owner.username, wiki.name)}}</a><br />
-          <a href="{{root}}/~{{wiki.owner.username}}/{{wiki.name}}">{{root}}/~{{wiki.owner.username}}/{{wiki.name}}</a><br />
-        {% else %}
-          <a href="ssh://{{repo_uri()}}">{{repo_uri()}}</a><br />
-          <a href="{{root}}/root">{{root}}/root</a><br />
-        {% endif %}
-        </dd>
-      </dl>
-      {% if current_user %}
-        <hr />
-        {% if wiki and wiki.owner.username == current_user.username %}
-        <a
-          href="{{ url_for("html.manage_delete",
-            owner_name=wiki.owner.username, wiki_name=wiki.name) }}"
-          class="btn btn-default btn-block"
-        >Manage your wiki</a>
-        {% endif %}
-        {% if is_root %}
-          <a href="/wiki/create" class="btn btn-primary btn-block">
-            Create a wiki {{icon("caret-right")}}
-          </a>
-        {% endif %}
-      {% endif %}
     </div>
+    <dl>
+      <dt>Clone this wiki</dt>
+      <dd>
+      {% if wiki %}
+        <a href="ssh://{{repo_uri(wiki.owner.username, wiki.name)}}">{{repo_uri(wiki.owner.username, wiki.name)}}</a><br />
+        <a href="{{root}}/~{{wiki.owner.username}}/{{wiki.name}}">{{root}}/~{{wiki.owner.username}}/{{wiki.name}}</a><br />
+      {% else %}
+        <a href="ssh://{{repo_uri()}}">{{repo_uri()}}</a><br />
+        <a href="{{root}}/root">{{root}}/root</a><br />
+      {% endif %}
+      </dd>
+    </dl>
+    {% if current_user %}
+      <hr />
+      {% if wiki and wiki.owner.username == current_user.username %}
+      <a
+        href="{{ url_for("html.manage_delete",
+          owner_name=wiki.owner.username, wiki_name=wiki.name) }}"
+        class="btn btn-default btn-block"
+      >Manage your wiki</a>
+      {% endif %}
+      {% if is_root %}
+        <a href="/wiki/create" class="btn btn-primary btn-block">
+          Create a wiki {{icon("caret-right")}}
+        </a>
+      {% endif %}
+    {% endif %}
+  </div>
+  <div class="content">
+    {{ content }}
   </div>
 </div>
 {% endblock %}
