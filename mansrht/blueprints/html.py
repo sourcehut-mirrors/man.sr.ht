@@ -6,11 +6,13 @@ from srht.flask import loginrequired
 from srht.markdown import markdown, extract_toc
 from srht.validation import Validation
 from mansrht.access import UserAccess, check_access
+from mansrht.redis import redis
 from mansrht.types import User, Wiki
 from mansrht.wikis import create_wiki, delete_wiki
-from datetime import datetime
+from datetime import datetime, timedelta
 from jinja2 import Markup
 from urllib.parse import urlparse, urlunparse
+import json
 import pygit2
 import os
 import yaml
@@ -56,35 +58,46 @@ def content(repo, path, wiki=None, is_root=False, **kwargs):
                 return redirect(urlunparse(url))
         else:
             abort(404)
-    blob = repo.get(tree.id)
-    if blob.is_binary:
-        abort(404)
-    md = blob.data.decode()
-    frontmatter = dict()
-    if md.startswith("---\n"):
-        try:
-            end = md.index("---\n\n", 1)
-        except ValueError:
-            end = -1 # this is dumb, Guido
-        if end != -1:
-            frontmatter = md[4:end]
-            md = md[end+5:]
-    if frontmatter:
-        try:
-            frontmatter = yaml.safe_load(frontmatter)
-            if not isinstance(frontmatter, dict):
-                raise Exception()
-        except:
-            md = "<!-- Error parsing YAML frontmatter -->\n\n" + md
-            frontmatter = dict()
-    if tree.name.endswith(".md"):
-        html = markdown(md, ["h1", "h2", "h3", "h4", "h5"], baselevel=3)
+    html_cachekey = f"man.sr.ht:content:{str(tree.id)}"
+    frontmatter_cachekey = f"man.sr.ht:frontmatter:{str(tree.id)}"
+    html = redis.get(html_cachekey)
+    if not html:
+        blob = repo.get(tree.id)
+        if blob.is_binary:
+            abort(404)
+        md = blob.data.decode()
+        frontmatter = dict()
+        if md.startswith("---\n"):
+            try:
+                end = md.index("---\n\n", 1)
+            except ValueError:
+                end = -1 # this is dumb, Guido
+            if end != -1:
+                frontmatter = md[4:end]
+                md = md[end+5:]
+        if frontmatter:
+            try:
+                frontmatter = yaml.safe_load(frontmatter)
+                if not isinstance(frontmatter, dict):
+                    raise Exception()
+            except:
+                md = "<!-- Error parsing YAML frontmatter -->\n\n" + md
+                frontmatter = dict()
+        if tree.name.endswith(".md"):
+            html = markdown(md, ["h1", "h2", "h3", "h4", "h5"], baselevel=3)
+        else:
+            html = Markup(md)
+        if current_user:
+            html = html.replace("{{{srht_username}}}", current_user.username)
+        else:
+            html = html.replace("{{{srht_username}}}", "USERNAME")
+        redis.setex(html_cachekey, timedelta(days=7), html)
+        redis.setex(frontmatter_cachekey,
+                timedelta(days=7), json.dumps(frontmatter))
     else:
-        html = Markup(md)
-    if current_user:
-        html = html.replace("{{{srht_username}}}", current_user.username)
-    else:
-        html = html.replace("{{{srht_username}}}", "USERNAME")
+        html = Markup(html.decode())
+        frontmatter = redis.get(frontmatter_cachekey)
+        frontmatter = json.loads(frontmatter.decode())
     title = path[-1].rstrip(".md") if path else "index"
     ctime = datetime.fromtimestamp(commit.commit_time)
     toc = extract_toc(html)
