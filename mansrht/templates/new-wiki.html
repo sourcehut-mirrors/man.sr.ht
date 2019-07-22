@@ -6,11 +6,10 @@
       <h1>index</h1>
       <p>
         You've successfully created your wiki, but it does not have any content
-        yet. Your repository is now available at
-        <code>{{repo_uri(wiki.owner.username, wiki.name)}}</code>.
+        yet. Your repository is available at <code>{{ clone_url.url }}</code>.
         To populate the index page, clone the repository and add an
-        <code>index.md</code> file. Commit it and push to the master branch and
-        you'll see the changes here.
+        <code>index.md</code> file. Commit it, push to the
+        <code>{{ repo.ref }}</code> branch, and you'll see the changes here.
       </p>
     </div>
   </div>

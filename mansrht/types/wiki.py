@@ -3,6 +3,7 @@ import sqlalchemy_utils as sau
 from srht.database import Base
 from enum import Enum
 
+# TODO: Add page to manage visiblity.
 class WikiVisibility(Enum):
     public = 'public'
     private = 'private'
@@ -15,9 +16,21 @@ class Wiki(Base):
     updated = sa.Column(sa.DateTime, nullable=False)
     name = sa.Column(sa.Unicode(256), nullable=False)
     owner_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'), nullable=False)
-    owner = sa.orm.relationship('User', backref=sa.orm.backref('repos'))
-    path = sa.Column(sa.Unicode(1024))
+    owner = sa.orm.relationship('User', backref=sa.orm.backref('wikis'))
+    repo_id = sa.Column(
+            sa.Integer,
+            sa.ForeignKey('backing_repo.id'),
+            nullable=False)
+    repo = sa.orm.relationship('BackingRepo', backref=sa.orm.backref('wikis'))
     visibility = sa.Column(
             sau.ChoiceType(WikiVisibility, impl=sa.String()),
             nullable=False,
             default=WikiVisibility.public)
+
+class RootWiki(Base):
+    __tablename__ = 'root_wiki'
+    id = sa.Column(
+            sa.Integer,
+            sa.ForeignKey('wiki.id'),
+            primary_key=True,
+            nullable=False)

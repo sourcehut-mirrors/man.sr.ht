@@ -57,37 +57,34 @@
     <h4>This commit</h4>
     <div class="clearfix"></div>
     <div class="card" style="padding: 0.25rem; border: none; border-radius: 0; margin-bottom: 0.5rem">
-<pre class="card-text">commit {{commit.id}}
-Author: {{commit.author.name}} &lt;{{ commit.author.email }}&gt;
-Date:   {{ctime.isoformat()}}
+<pre class="card-text">commit {{ repo.commit_sha }}
+Author: {{ repo.commit_author }} &lt;{{ repo.commit_email }}&gt;
+Date:   {{ repo.commit_time }}
 
-{{commit.message.rstrip("\n")}}</pre>
+{{ repo.commit_message.rstrip("\n") }}</pre>
     </div>
     <dl>
       <dt>Clone this wiki</dt>
       <dd>
-      {% if wiki %}
-        <a href="ssh://{{repo_uri(wiki.owner.username, wiki.name)}}">{{repo_uri(wiki.owner.username, wiki.name)}}</a><br />
-        <a href="{{root}}/~{{wiki.owner.username}}/{{wiki.name}}">{{root}}/~{{wiki.owner.username}}/{{wiki.name}}</a><br />
-      {% else %}
-        <a href="ssh://{{repo_uri()}}">{{repo_uri()}}</a><br />
-        <a href="{{root}}/root">{{root}}/root</a><br />
-      {% endif %}
+      {% for url in clone_urls|map(attribute="url") %}
+        <a href={{ url }}>{{ url }}</a>
+      {% endfor %}
       </dd>
     </dl>
     {% if current_user %}
       <hr />
       {% if wiki and wiki.owner.username == current_user.username %}
       <a
-        href="{{ url_for("html.manage_delete",
-          owner_name=wiki.owner.username, wiki_name=wiki.name) }}"
+        href="{{ url_for("manage.delete",
+          owner_name=wiki.owner.canonical_name, wiki_name=wiki.name) }}"
         class="btn btn-default btn-block"
       >Manage your wiki</a>
       {% endif %}
       {% if is_root %}
-        <a href="/wiki/create" class="btn btn-primary btn-block">
-          Create a wiki {{icon("caret-right")}}
-        </a>
+      <a
+        href="{{ url_for("create.create_GET") }}"
+        class="btn btn-primary btn-block"
+      >Create a wiki {{icon("caret-right")}}</a>
       {% endif %}
     {% endif %}
   </div>

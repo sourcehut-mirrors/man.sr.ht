@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+{% block body %}
+<div class="container">
+  <div class="row">
+    <div class="col-md-4">
+      <p>
+        The content for each wiki is managed by a git.sr.ht repository. You can
+        either create a new repo or choose an existing repo. A ref will also be
+        needed. This can either be an existing head (if there are any), or you
+        may optionally push to a new branch.
+      </p>
+    </div>
+    <div class="col-md-8">
+      <h3>Create a new {{ typename_pretty }}</h3>
+        <form method="POST" action="/wiki/create/{{ typename }}/new">
+          {{csrf_token()}}
+          <div class="form-group">
+            <label for="{{ typename }}">Name</label>
+            <input
+              type="text"
+              name="{{ typename }}"
+              id="name"
+              class="form-control {{ valid.cls(typename) }}"
+              value="{{ default or "" }}" />
+            {{ valid.summary(typename) }}
+          </div>
+          <button type="submit" class="btn btn-primary">
+            Create {{ typename_pretty }} {{ icon("caret-right") }}
+          </button>
+        </form>
+      {% if items %}
+      <h3>Or choose an existing {{ typename_pretty }}</h3>
+        <form>
+          <input
+            name="search"
+            type="text"
+            placeholder="Search your {{ typename_pretty }}s"
+            class="form-control"
+            value="{{ search if search else "" }}" />
+        </form>
+
+        <div class="event-list configure">
+        {% for item in items %}
+          <form class="event" method="POST" action="/wiki/create/{{ typename }}">
+            {{csrf_token()}}
+            <input type="hidden" name="{{ typename }}" value="{{ item.name }}" />
+            <h4>
+              {% if item.name not in existing %}
+              <button
+                type="submit"
+                class="pull-right btn btn-primary btn-lg"
+              >Select {{ typename_pretty }} {{ icon("caret-right") }}</button>
+              {% else %}
+              <button
+                class="pull-right btn btn-default btn-lg"
+                disabled
+              >Already created</button>
+              {% endif %}
+              <a
+                href="{{ item.url }}"
+                target="_blank"
+                rel="noopener"
+              >{{ item.name }}</a>
+            </h4>
+          </form>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

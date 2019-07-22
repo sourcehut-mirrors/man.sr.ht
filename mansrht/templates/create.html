@@ -6,15 +6,16 @@
 <div class="container">
   <div class="row">
     <section class="col-md-6">
+      {% if is_root %}
+      <h3 id="create">Create root wiki</h3>
+      {% else %}
       <h3 id="create">Create new wiki</h3>
+      {% endif%}
       <form method="POST" action="/wiki/create">
         {{csrf_token()}}
         <div class="form-group">
           <label for="name">Name</label>
           <input
-            {% if another %}
-            autofocus
-            {% endif %}
             type="text"
             name="name"
             id="name"
@@ -23,7 +24,7 @@
           {{valid.summary("name")}}
         </div>
         <button type="submit" class="btn btn-primary">
-          Create {{icon("caret-right")}}
+          Select repo {{icon("caret-right")}}
         </button>
       </form>
     </section>
