@@ -48,8 +48,6 @@ def check_access(owner_name, wiki_name, access):
     if not owner or not wiki:
         abort(404)
     a = get_access(wiki)
-    if not UserAccess.write in a:
-        abort(404)
     if not access in a:
         abort(403)
     return owner, wiki

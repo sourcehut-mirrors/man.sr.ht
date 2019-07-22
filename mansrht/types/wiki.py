@@ -3,7 +3,6 @@ import sqlalchemy_utils as sau
 from srht.database import Base
 from enum import Enum
 
-# TODO: Add page to manage visiblity.
 class WikiVisibility(Enum):
     public = 'public'
     private = 'private'

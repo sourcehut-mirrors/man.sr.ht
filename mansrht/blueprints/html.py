@@ -10,6 +10,7 @@ from mansrht.access import UserAccess, check_access
 from mansrht.redis import redis
 from mansrht.repo import GitsrhtBackend
 from mansrht.types import User, Wiki, RootWiki
+from mansrht.wikis import is_root_wiki
 from datetime import timedelta
 from jinja2 import Markup
 from urllib.parse import urlparse, urlunparse
@@ -153,24 +154,14 @@ def root_content(path=None):
         abort(404)
     return content(wiki, path, is_root=True)
 
-@html.route("/~<owner_name>/<wiki_name>")
-@html.route("/~<owner_name>/<wiki_name>/")
-@html.route("/~<owner_name>/<wiki_name>/<path:path>")
+@html.route("/<owner_name>/<wiki_name>")
+@html.route("/<owner_name>/<wiki_name>/")
+@html.route("/<owner_name>/<wiki_name>/<path:path>")
 def user_content(owner_name, wiki_name, path=None):
-    owner = User.query.filter(User.username == owner_name).first()
-    if not owner:
+    owner, wiki = check_access(owner_name, wiki_name, UserAccess.read)
+    if not owner or not wiki:
         abort(404)
-    wiki = (Wiki.query
-            .filter(Wiki.owner_id == owner.id)
-            .filter(Wiki.name.like(wiki_name))
-        ).first()
-    if not wiki:
-        abort(404)
-
     # Redirect to root if it _is_ the root.
-    root_wiki = RootWiki.query.all()
-    if root_wiki:
-        root_wiki = Wiki.query.filter(Wiki.id == root_wiki[0].id).first()
-        if root_wiki and wiki == root_wiki:
-            return redirect("/")
+    if is_root_wiki(wiki):
+        return redirect("/")
     return content(wiki, path)

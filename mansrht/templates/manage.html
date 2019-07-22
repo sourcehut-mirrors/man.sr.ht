@@ -22,12 +22,20 @@
           </a>
         </li>
         <li class="nav-item">
-          <!-- Only option at the moment so we assume it's active. -->
           <a
-            class="nav-link active"
+            class="nav-link \
+            {% if request.path.endswith("info") %}active{% endif %}"
+            href="{{ url_for("manage.info",
+              owner_name=owner.canonical_name, wiki_name=wiki.name) }}"
+          >info</a>
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link \
+            {% if request.path.endswith("delete") %}active{% endif %}"
             href="{{ url_for("manage.delete",
-              owner_name=owner.username, wiki_name=wiki.name) }}"
-          > delete </a>
+              owner_name=owner.canonical_name, wiki_name=wiki.name) }}"
+          >delete</a>
         </li>
       </ul>
       {% endblock %}

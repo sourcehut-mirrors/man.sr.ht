@@ -18,6 +18,15 @@ def validate_name(valid, owner, wiki_name):
     valid.expect(not existing, "This name is already in use.", field="name")
     return None
 
+def is_root_wiki(wiki):
+    if not wiki:
+        return False
+    root_wiki = RootWiki.query.all()
+    if root_wiki:
+        root_wiki = Wiki.query.filter(Wiki.id == root_wiki[0].id).first()
+        return root_wiki and wiki == root_wiki
+    return False
+
 def create_repo(is_new, name, ref, webhook_id, commit=None):
     repo = BackingRepo()
     repo.new = is_new

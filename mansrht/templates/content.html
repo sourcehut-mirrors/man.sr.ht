@@ -75,7 +75,7 @@ Date:   {{ repo.commit_time }}
       <hr />
       {% if wiki and wiki.owner.username == current_user.username %}
       <a
-        href="{{ url_for("manage.delete",
+        href="{{ url_for("manage.info",
           owner_name=wiki.owner.canonical_name, wiki_name=wiki.name) }}"
         class="btn btn-default btn-block"
       >Manage your wiki</a>
