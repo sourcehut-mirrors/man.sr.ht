@@ -50,7 +50,7 @@ setup(
   author = 'Drew DeVault',
   author_email = 'sir@cmpwn.com',
   url = 'https://git.sr.ht/~sircmpwn/man.sr.ht',
-  install_requires = ['srht', 'flask-login', 'pygit2'],
+  install_requires = ['srht', 'flask-login'],
   license = 'AGPL-3.0',
   package_data={
       'mansrht': [
@@ -59,9 +59,5 @@ setup(
           'static/*'
       ]
   },
-  scripts = [
-      'mansrht-keys',
-      'mansrht-shell',
-      'mansrht-migrate',
-  ]
+  scripts = ['mansrht-migrate']
 )

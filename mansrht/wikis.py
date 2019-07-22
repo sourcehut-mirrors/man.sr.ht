@@ -1,13 +1,10 @@
 import subprocess
 from srht.database import db
-from srht.config import cfg
 from mansrht.types import Wiki, RootWiki, BackingRepo
 from mansrht.repo import GitsrhtBackend
 import shutil
 import re
 import os
-
-repos_path = cfg("man.sr.ht", "repo-path")
 
 def validate_name(valid, owner, wiki_name):
     if not valid.ok:
