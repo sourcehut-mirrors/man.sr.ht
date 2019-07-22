@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 from flask import Blueprint, render_template, abort, request, redirect
-from flask import session
 from flask_login import current_user
+from srht.flask import session
 from srht.markdown import markdown, extract_toc
 from srht.oauth import UserType
 from srht.validation import Validation
