@@ -47,12 +47,12 @@ def create_repo(is_new, name, ref, webhook_id, commit=None):
     db.session.commit()
     return repo
 
-
-def create_wiki(valid, owner, wiki_name, repo, is_root=False):
+def create_wiki(valid, owner, wiki_name, repo, visibility, is_root=False):
     wiki = Wiki()
     wiki.name = wiki_name
     wiki.owner_id = owner.id
     wiki.repo_id = repo.id
+    wiki.visibility = visibility
     db.session.add(wiki)
     db.session.flush()
 

@@ -58,12 +58,14 @@ def create_POST():
     wiki_name = valid.require("name", friendly_name="Name")
     if not valid.ok:
         return render_template("create.html", **valid.kwargs)
-
     validate_name(valid, current_user, wiki_name)
     if not valid.ok:
         return render_template("create.html", **valid.kwargs)
-
+    visibility = valid.optional("visibility",
+            default="public",
+            cls=WikiVisibility)
     session["wiki_name"] = wiki_name
+    session["wiki_visibility"] = visibility.name
     return redirect("/wiki/create/repo")
 
 @create.route("/wiki/create/repo")
@@ -115,6 +117,7 @@ def select_ref_POST():
         return redirect("/wiki/create")
 
     is_root = session.get("configure_root", False)
+    visibility = WikiVisibility(session.get("wiki_visibility", "public"))
     repo_name, new_repo = wiki_repo
     backend = GitsrhtBackend(current_user)
 
@@ -145,10 +148,13 @@ def select_ref_POST():
     repo = create_repo(
             new_repo, repo_name, ref_name,
             hook["id"], commit=commit)
-    create_wiki(valid, current_user, wiki_name, repo, is_root=is_root)
+    create_wiki(
+            valid, current_user, wiki_name,
+            repo, visibility, is_root=is_root)
 
     del session["wiki_name"]
     del session["wiki_repo"]
+    session.pop("wiki_visibility", None)
     session.pop("configure_root", None)
 
     return redirect("/{}/{}".format(current_user.canonical_name, wiki_name))

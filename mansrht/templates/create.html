@@ -23,6 +23,48 @@
             value="{{ repo_name or "" }}" />
           {{valid.summary("name")}}
         </div>
+        {% if not is_root %}
+        <fieldset class="form-group">
+          <legend>Visibility</legend>
+          <div class="form-check form-check-inline">
+            <label
+              class="form-check-label"
+              title="Publically visible and listed on your profile"
+            >
+              <input
+                class="form-check-input"
+                type="radio"
+                name="visibility"
+                value="public"
+                checked> Public
+            </label>
+          </div>
+          <div class="form-check form-check-inline">
+            <label
+                class="form-check-label"
+                title="Visible to anyone with the link, but not shown on your profile"
+              >
+              <input
+                class="form-check-input"
+                type="radio"
+                name="visibility"
+                value="unlisted"> Unlisted
+            </label>
+          </div>
+          <div class="form-check form-check-inline">
+            <label
+              class="form-check-label"
+              title="Only visible to you and your collaborators"
+            >
+              <input
+                class="form-check-input"
+                type="radio"
+                name="visibility"
+                value="private"> Private
+            </label>
+          </div>
+        </fieldset>
+        {% endif %}
         <button type="submit" class="btn btn-primary">
           Select repo {{icon("caret-right")}}
         </button>
