@@ -84,6 +84,7 @@ def migrate_repo(path, username, repo_name, is_root=False):
             "commit_author": commit.author.name,
             "commit_email": commit.author.email,
             "commit_time": commit_time(commit).strftime(DATE_FORMAT),
+            "commit_message": commit.message,
             "tree_sha": str(commit.tree_id),
         }
 
