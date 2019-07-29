@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+import json
+import sys
+from srht.config import cfg, get_origin
+from srht.database import DbSession
+from srht.flask import DATE_FORMAT
+from flask_login import login_user
+from mansrht.app import app
+from mansrht.repo import GitsrhtBackend
+from mansrht.types import BackingRepo, User, Wiki, RootWiki
+from mansrht.wikis import validate_name, create_repo, create_wiki
+
+manifest = json.loads(sys.stdin.read())
+
+db = DbSession(cfg("man.sr.ht", "connection-string"))
+db.init()
+
+def import_repo(repo, is_root=False):
+    username = repo["owner"]
+    repo_name = repo["name"]
+    print(f"Importing ~{username}/{repo_name}")
+    user = User.query.filter(User.username == username).one_or_none()
+    if not user:
+        print("Skipping: user not found")
+        return
+    login_user(user)
+    wiki = (Wiki.query
+            .filter(Wiki.name == repo_name)
+            .filter(Wiki.owner_id == user.id)).one_or_none()
+    if not wiki:
+        print("Skipping: wiki not found")
+        return
+    if wiki.repo_id:
+        print("Skipping: already imported this wiki")
+        return
+    backend = GitsrhtBackend(user)
+    hook = backend.subscribe_repo_update(repo_name)
+    brepo = BackingRepo()
+    brepo.new = repo["new"]
+    brepo.name = repo_name
+    brepo.ref = repo["ref"]
+    brepo.commit_sha = repo["commit_sha"]
+    brepo.commit_author = repo["commit_author"]
+    brepo.commit_time = repo["commit_time"]
+    brepo.commit_message = repo["commit_message"]
+    brepo.tree_sha = repo["tree_sha"]
+    brepo.webhook_id = hook["id"]
+    db.session.add(brepo)
+    db.session.flush()
+    wiki.repo_id = brepo.id
+    if is_root:
+        rw = RootWiki()
+        rw.id = wiki.id
+        db.session.add(rw)
+    db.session.commit()
+
+with app.app_context():
+    with app.test_request_context("/"):
+        import_repo(manifest["root"], is_root=True)
+        for wiki in manifest["wikis"]:
+            import_repo(wiki)

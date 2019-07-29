@@ -21,13 +21,13 @@ def _request_post(url, token, data=None):
     r = requests.post(
             url, json=data, headers={"Authorization": f"token {token}"})
     if r.status_code != 201:
-        raise Exception(r.json())
+        raise Exception(r.text)
     return r.json()
 
 def _request_delete(url, token):
     r = requests.delete(url, headers={"Authorization": f"token {token}"})
     if r.status_code != 204:
-        raise Exception(r.json())
+        raise Exception(r.text)
 
 class RepoBackend(abc.ABC):
     """

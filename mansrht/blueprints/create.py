@@ -125,8 +125,8 @@ def select_ref_POST():
     valid = Validation(request)
     ref_name = valid.require("ref", friendly_name="Ref")
     if not valid.ok:
-        return select_ref(
-                backend, wiki_name, repo_name, new_repo **valid.kwargs)
+        return select_ref(backend, wiki_name, repo_name,
+                new_repo, **valid.kwargs)
 
     if new_repo:
         # Check if a repo with the same name already exists.
