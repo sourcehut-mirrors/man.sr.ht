@@ -2,15 +2,31 @@
 {% block content %}
 <div class="container">
   <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-8">
       <h1>index</h1>
       <p>
-        You've successfully created your wiki, but it does not have any content
-        yet. Your repository is available at <code>{{ clone_url.url }}</code>.
-        To populate the index page, clone the repository and add an
-        <code>index.md</code> file. Commit it, push to the
-        <code>{{ repo.ref }}</code> branch, and you'll see the changes here.
+        Your wiki has been created, but does not have any content. To add
+        content, push commits to the <strong>{{repo.ref}}</strong> branch of
+        <a
+          href="{{web_url}}"
+        >{{wiki.owner.canonical_name}}/{{wiki.repo.name}}</a>:
+        <code class="grey">{{clone_url.url}}</code>
       </p>
+      {% if repo.ref != "master" %}
+      <pre>git clone {{clone_url.url}} &amp;&amp; cd {{repo.name}}
+git checkout --orphan {{repo.ref}}
+git rm -rf *
+echo "Hello world!" &gt;index.md
+git add index.md
+git commit -m"Initial wiki commit"
+git push -u origin {{repo.ref}}</pre>
+      {% else %}
+      <pre>git clone {{clone_url.url}} &amp;&amp; cd {{repo.name}}
+echo "Hello world!" &gt;index.md
+git add index.md
+git commit -m"Initial wiki commit"
+git push -u origin {{repo.ref}}</pre>
+      {% endif %}
     </div>
   </div>
 </div>

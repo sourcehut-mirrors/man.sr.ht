@@ -54,9 +54,10 @@ def content(wiki, path, is_root=False, **kwargs):
     backend = GitsrhtBackend(wiki.owner)
     clone_urls = get_clone_urls(
             backend.origin, wiki.owner, wiki.repo, backend.ssh_format)
+    web_url=f"{backend.origin}/{wiki.owner.canonical_name}/{wiki.repo.name}"
     if not wiki.repo.commit_sha:
-        return render_template(
-                "new-wiki.html", clone_url=clone_urls[1], repo=wiki.repo)
+        return render_template("new-wiki.html", wiki=wiki,
+                clone_url=clone_urls[1], repo=wiki.repo, web_url=web_url)
 
     head, tail = os.path.split(path) if path else (None, None)
     path = tuple(p for p in (head, tail) if p)
@@ -136,7 +137,7 @@ def content(wiki, path, is_root=False, **kwargs):
     return render_template("content.html",
             content=html, title=title, repo=wiki.repo, toc=toc,
             wiki=wiki, is_root=is_root, path=path, frontmatter=frontmatter,
-            clone_urls=clone_urls, **kwargs)
+            clone_urls=clone_urls, web_url=web_url, **kwargs)
 
 @html.route("/")
 @html.route("/<path:path>")

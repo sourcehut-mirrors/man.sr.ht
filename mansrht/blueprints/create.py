@@ -20,6 +20,7 @@ def select_repo(backend, wiki_name, **kwargs):
     existing = [
         wiki.repo.name
         for wiki in Wiki.query.filter(Wiki.owner_id == current_user.id).all()
+        if wiki.repo
     ]
 
     # TODO: Add cancel button.
