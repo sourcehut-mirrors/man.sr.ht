@@ -155,11 +155,13 @@ def root_content(path=None):
         abort(404)
     return content(wiki, path, is_root=True)
 
-@html.route("/<owner_name>/<wiki_name>")
-@html.route("/<owner_name>/<wiki_name>/")
-@html.route("/<owner_name>/<wiki_name>/<path:path>")
+# The tilde (~) in the route is necessary in order to differentiate between the
+# root wiki and user wikis.
+@html.route("/~<owner_name>/<wiki_name>")
+@html.route("/~<owner_name>/<wiki_name>/")
+@html.route("/~<owner_name>/<wiki_name>/<path:path>")
 def user_content(owner_name, wiki_name, path=None):
-    owner, wiki = check_access(owner_name, wiki_name, UserAccess.read)
+    owner, wiki = check_access(f"~{owner_name}", wiki_name, UserAccess.read)
     if not owner or not wiki:
         abort(404)
     # Redirect to root if it _is_ the root.
