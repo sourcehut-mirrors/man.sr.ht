@@ -12,7 +12,7 @@
   <div class="row">
     <div class="col-md-12 header-tabbed">
       <h2>
-        {% if wiki %}
+        {% if wiki and not is_root %}
           {{wiki.owner.canonical_name}}/{{wiki.name}}/{{title}}
         {% else %}
           {{title}}
