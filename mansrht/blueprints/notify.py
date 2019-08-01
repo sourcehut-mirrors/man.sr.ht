@@ -29,14 +29,22 @@ def ref_update(repo_id):
     for ref in payload["refs"]:
         if ref["name"] == f"refs/heads/{repo.ref}":
             commit = ref.get("new")
-            if not commit:
-                break
-            repo.commit_sha = commit["id"]
-            repo.commit_author = commit["author"]["name"]
-            repo.commit_email = commit["author"]["email"]
-            repo.commit_time = commit["timestamp"]
-            repo.commit_message = commit["message"]
-            repo.tree_sha = commit["tree"]
+            if commit:
+                repo.commit_sha = commit["id"]
+                repo.commit_author = commit["author"]["name"]
+                repo.commit_email = commit["author"]["email"]
+                repo.commit_time = commit["timestamp"]
+                repo.commit_message = commit["message"]
+                repo.tree_sha = commit["tree"]
+            else:
+                # Nullify all the fields so that the wiki defaults back to the
+                # "new-wiki" page.
+                repo.commit_sha = None
+                repo.commit_author = None
+                repo.commit_email = None
+                repo.commit_time = None
+                repo.commit_message = None
+                repo.tree_sha = None
             db.session.commit()
             break
     else:
