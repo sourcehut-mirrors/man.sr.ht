@@ -47,16 +47,6 @@ def select_ref(backend, wiki_name, repo_name, new_repo):
             "select.html", typename="ref", typename_pretty="ref",
             default="wiki", items=sorted(refs, key=lambda x: x.name))
 
-def consolidate_repo_webhooks(owner):
-    backend = GitsrhtBackend(owner)
-    if owner.repo_update_webhook is None:
-        hook = backend.subscribe_repo_update()
-        owner.repo_update_webhook = hook["id"]
-    if owner.repo_delete_webhook is None:
-        hook = backend.subscribe_repo_delete()
-        owner.repo_delete_webhook = hook["id"]
-    db.session.commit()
-
 @create.route("/wiki/create")
 @loginrequired
 def create_GET():
@@ -157,7 +147,7 @@ def select_ref_POST():
     if not new_repo and not new_ref:
         commit = backend.get_latest_commit(repo_name, ref_name)
 
-    consolidate_repo_webhooks(current_user)
+    backend.ensure_repo_update()
 
     repo = create_repo(
             new_repo, repo_dict["name"], repo_dict["id"], ref_name,

@@ -34,7 +34,6 @@ def import_repo(repo, is_root=False):
         print("Skipping: already imported this wiki")
         return
     backend = GitsrhtBackend(user)
-    hook = backend.subscribe_repo_update(repo_name)
     brepo = BackingRepo()
     brepo.new = repo["new"]
     brepo.name = repo_name
@@ -44,9 +43,13 @@ def import_repo(repo, is_root=False):
     brepo.commit_time = repo["commit_time"]
     brepo.commit_message = repo["commit_message"]
     brepo.tree_sha = repo["tree_sha"]
-    brepo.webhook_id = hook["id"]
+    brepo.resource_id = repo["id"]
     db.session.add(brepo)
     db.session.flush()
+
+    backend.ensure_repo_postupdate(brepo)
+    backend.ensure_repo_update()
+
     wiki.repo_id = brepo.id
     if is_root:
         rw = RootWiki()

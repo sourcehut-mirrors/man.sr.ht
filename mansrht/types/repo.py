@@ -14,4 +14,3 @@ class BackingRepo(Base):
     commit_time = sa.Column(sa.Unicode(256))
     commit_message = sa.Column(sa.Unicode(1024))
     tree_sha = sa.Column(sa.Unicode(256))
-    webhook_id = sa.Column(sa.Integer)

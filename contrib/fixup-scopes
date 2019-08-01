@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+#
+# This script is intended to be run on meta.sr.ht first, it updates scopes and
+# prints a list of token hashes to feed into the git.sr.ht box.
+#
+# Usage:
+#
+# (on meta.sr.ht)
+# ./fixup-scopes meta [man.sr.ht client ID] [git.sr.ht client ID] > scopes
+#
+# (then, on git.sr.ht)
+# ./fixup-scopes git [man.sr.ht client ID] [git.sr.ht client ID] < scopes
+
+import sys
+from srht.config import cfg
+from srht.database import db, DbSession
+
+stage = sys.argv[1]
+man_client_id = sys.argv[2]
+git_client_id = sys.argv[3]
+
+scopes = f"profile:read,{git_client_id}/info:write,{git_client_id}/data"
+
+if stage == "meta":
+    from metasrht.types import OAuthClient, OAuthToken
+    db = DbSession(cfg("meta.sr.ht", "connection-string"))
+    db.init()
+
+    client = OAuthClient.query.filter(
+            OAuthClient.client_id == man_client_id).one()
+    for token in OAuthToken.query.filter(OAuthToken.client_id == client.id):
+        token._scopes = scopes
+        print(token.token_hash)
+    db.session.commit()
+elif stage == "git":
+    from gitsrht.types import OAuthToken
+    db = DbSession(cfg("git.sr.ht", "connection-string"))
+    db.init()
+
+    hashes = sys.stdin.read().splitlines()
+    print(f"{len(hashes)} hashes")
+    n = 0
+    for token in OAuthToken.query.filter(OAuthToken.token_hash.in_(hashes)):
+        n += 1
+        print(f"Updating {n}/{len(hashes)}")
+        token._scopes = scopes
+    db.session.commit()

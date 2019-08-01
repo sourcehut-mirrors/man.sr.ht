@@ -74,8 +74,10 @@ def migrate_repo(path, username, repo_name, is_root=False):
         if proc.returncode != 0:
             print("Error during git push: " + str(proc.stdout), file=sys.stderr)
             return
+        db.session.flush()
         commit = repo.get(repo.head.target)
         return {
+            "id": git_repo.id,
             "new": new,
             "name": repo_name,
             "owner": user.username,

@@ -1,7 +1,7 @@
 import requests
 from flask import url_for
 from flask_login import current_user
-from srht.api import get_results
+from srht.api import get_results, ensure_webhooks
 from srht.config import get_origin
 import abc
 import os
@@ -80,22 +80,13 @@ class RepoBackend(abc.ABC):
     def get_blob(self, repo_name, blob_id): pass
 
     @abc.abstractmethod
-    def subscribe_repo_postupdate(self, repo_name): pass
+    def ensure_repo_postupdate(self, repo_name): pass
 
     @abc.abstractmethod
-    def unsubscribe_repo_postupdate(self, repo): pass
+    def unensure_repo_postupdate(self, repo): pass
 
     @abc.abstractmethod
-    def subscribe_repo_update(self): pass
-
-    @abc.abstractmethod
-    def unsubscribe_repo_update(self): pass
-
-    @abc.abstractmethod
-    def subscribe_repo_delete(self): pass
-
-    @abc.abstractmethod
-    def unsubscribe_repo_delete(self): pass
+    def ensure_repo_update(self): pass
 
 class GitsrhtBackend(RepoBackend):
     """
@@ -108,7 +99,8 @@ class GitsrhtBackend(RepoBackend):
     def __init__(self, owner):
         super(GitsrhtBackend, self).__init__()
         self.owner = owner
-        self.api_url = f"{self.origin}/api/{owner.canonical_name}"
+        self.api_url = f"{self.origin}/api"
+        self.api_user_url = f"{self.api_url}/{owner.canonical_name}"
 
     @property
     def origin(self):
@@ -123,11 +115,11 @@ class GitsrhtBackend(RepoBackend):
         return "git@{origin}:{user}/{repo}"
 
     def get_repos(self):
-        url = f"{self.api_url}/repos"
+        url = f"{self.api_user_url}/repos"
         yield from get_results(url, current_user.oauth_token)
 
     def get_repo(self, repo_name):
-        url = f"{self.api_url}/repos/{repo_name}"
+        url = f"{self.api_user_url}/repos/{repo_name}"
         return _request_get(url, current_user.oauth_token)
 
     def create_repo(self, repo_name):
@@ -146,7 +138,7 @@ class GitsrhtBackend(RepoBackend):
                 self.origin_ext, self.owner.canonical_name, repo_name)
 
     def get_refs(self, repo_name):
-        url = f"{self.api_url}/repos/{repo_name}/refs"
+        url = f"{self.api_user_url}/repos/{repo_name}/refs"
         for ref in get_results(url, current_user.oauth_token):
             if not ref["name"].startswith("refs/heads/"):
                 continue
@@ -158,18 +150,18 @@ class GitsrhtBackend(RepoBackend):
                 repo_name, ref)
 
     def get_latest_commit(self, repo_name, ref):
-        url = f"{self.api_url}/repos/{repo_name}/log/{ref}"
+        url = f"{self.api_user_url}/repos/{repo_name}/log/{ref}"
         return _request_get(url, current_user.oauth_token).get("results")[0]
 
     def get_tree(self, repo_name, ref, path=None):
-        url = f"{self.api_url}/repos/{repo_name}/tree/{ref}"
+        url = f"{self.api_user_url}/repos/{repo_name}/tree/{ref}"
         if path:
             url = os.path.join(url, path)
         return _request_get(url, current_user.oauth_token)
 
     def get_blob(self, repo_name, blob_id):
         # TODO: Perhaps get_blob() should do all the tree-traversal for us?
-        url = f"{self.api_url}/blob/{repo_name}/blob/{blob_id}"
+        url = f"{self.api_user_url}/blob/{repo_name}/blob/{blob_id}"
         r = requests.get(
             url, headers={"Authorization": f"token {current_user.oauth_token}"})
 
@@ -178,47 +170,21 @@ class GitsrhtBackend(RepoBackend):
             return None
         return r.text
 
-    def subscribe_repo_postupdate(self, repo):
-        url = f"{self.api_url}/repos/{repo.name}/webhooks"
-        webhook_data = {
-            "url": (origin
-                + url_for("webhooks.notify.ref_update", repo_id=repo.id)),
-            "events": ["repo:post-update"],
-        }
-        return _request_post(url, self.owner.oauth_token, data=webhook_data)
+    def ensure_repo_postupdate(self, repo):
+        url = origin + url_for("webhooks.notify.ref_update", repo_id=repo.id)
+        ensure_webhooks(self.owner.oauth_token,
+            f"{self.api_user_url}/repos/{repo.name}/webhooks", {
+                url: ["repo:post-update"],
+            })
 
-    def unsubscribe_repo_postupdate(self, repo):
-        url = f"{self.api_url}/repos/{repo.name}/webhooks/{repo.webhook_id}"
-        _request_delete(url, self.owner.oauth_token)
+    def unensure_repo_postupdate(self, repo):
+        url = origin + url_for("webhooks.notify.ref_update", repo_id=repo.id)
+        ensure_webhooks(self.owner.oauth_token,
+            f"{self.api_user_url}/repos/{repo.name}/webhooks", { url: None })
 
-    def subscribe_repo_update(self):
-        if current_user == self.owner:
-            url = f"{self.origin}/api/user/webhooks"
-            webhook_data = {
-                "url": origin + url_for("webhooks.notify.repo_update"),
-                "events": ["repo:update"],
-            }
-            return _request_post(
-                    url, self.owner.oauth_token, data=webhook_data)
-
-    def unsubscribe_repo_update(self):
-        if current_user == self.owner:
-            url = "{}/api/user/webhooks/{}".format(
-                    self.origin, self.owner.repo_update_webhook)
-            _request_delete(url, self.owner.oauth_token)
-
-    def subscribe_repo_delete(self):
-        if current_user == self.owner:
-            url = f"{self.origin}/api/user/webhooks"
-            webhook_data = {
-                "url": origin + url_for("webhooks.notify.repo_delete"),
-                "events": ["repo:delete"],
-            }
-            return _request_post(
-                    url, self.owner.oauth_token, data=webhook_data)
-
-    def unsubscribe_repo_delete(self):
-        if current_user == self.owner:
-            url = "{}/api/user/webhooks/{}".format(
-                    self.origin, self.owner.repo_delete_webhook)
-            _request_delete(url, self.owner.oauth_token)
+    def ensure_repo_update(self):
+        url = origin + url_for("webhooks.notify.repo_update")
+        ensure_webhooks(self.owner.oauth_token,
+            f"{self.api_url}/user/webhooks", {
+                url: ["repo:update", "repo:delete"],
+            })

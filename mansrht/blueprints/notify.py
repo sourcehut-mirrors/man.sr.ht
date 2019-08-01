@@ -7,18 +7,12 @@ import json
 
 webhooks_notify = Blueprint("webhooks.notify", __name__)
 
-def check_event(request, expected):
-    payload = json.loads(request.data.decode("utf-8"))
-    event = request.headers.get("X-Webhook-Event")
-    if event != expected:
-        return payload, None
-    return payload, event
-
 @csrf_bypass
 @webhooks_notify.route("/webhook/notify/<repo_id>/refs", methods=["POST"])
 def ref_update(repo_id):
-    payload, event = check_event(request, "repo:post-update")
-    if not event:
+    event = request.headers.get("X-Webhook-Event")
+    payload = json.loads(request.data.decode("utf-8"))
+    if event != "repo:post-update":
         return f"Unexpected event {event}"
     owner = User.query.filter(
             User.username.like(payload["pusher"]["name"])).one_or_none()
@@ -54,27 +48,22 @@ def ref_update(repo_id):
 @csrf_bypass
 @webhooks_notify.route("/webhook/notify/repos/update", methods=["POST"])
 def repo_update():
-    payload, event = check_event(request, "repo:update")
-    if not event:
-        return f"Unexpected event {event}"
-    repo = BackingRepo.query.filter(
-            BackingRepo.resource_id == payload["id"]).one_or_none()
-    if repo and payload["name"] != repo.name:
-        repo.name = payload["name"]
-        db.session.commit()
-        return "Updated repo name"
-    return "No repos updated"
-
-@csrf_bypass
-@webhooks_notify.route("/webhook/notify/repos/delete", methods=["POST"])
-def repo_delete():
-    payload, event = check_event(request, "repo:delete")
-    if not event:
+    event = request.headers.get("X-Webhook-Event")
+    payload = json.loads(request.data.decode("utf-8"))
+    if event not in ["repo:update", "repo:delete"]:
         return f"Unexpected event {event}"
     repo = BackingRepo.query.filter(
             BackingRepo.resource_id == payload["id"]).one_or_none()
     if not repo:
-        return "No wikis updated"
-    wiki = Wiki.query.filter(Wiki.repo_id == repo.id).one_or_none()
-    delete_wiki(wiki, wiki.owner, delete_from_backend=False)
-    return f"Deleted wiki {wiki.name}"
+        return "Unknown repo"
+    if event == "repo:update":
+        if repo and payload["name"] != repo.name:
+            repo.name = payload["name"]
+            db.session.commit()
+            return "Updated repo name"
+    elif event == "repo:delete":
+        wiki = Wiki.query.filter(Wiki.repo_id == repo.id).one_or_none()
+        wiki_name = wiki.name
+        delete_wiki(wiki, wiki.owner, delete_from_backend=False)
+        return f"Deleted wiki {wiki_name}"
+    return "No repos updated"

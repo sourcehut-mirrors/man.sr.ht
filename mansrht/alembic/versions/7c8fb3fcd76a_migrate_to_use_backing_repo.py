@@ -28,8 +28,7 @@ def upgrade():
             sa.Column("commit_email", sa.Unicode(256)),
             sa.Column("commit_time", sa.Unicode(256)),
             sa.Column("commit_message", sa.Unicode(1024)),
-            sa.Column("tree_sha", sa.Unicode(256)),
-            sa.Column("webhook_id", sa.Integer, nullable=False))
+            sa.Column("tree_sha", sa.Unicode(256)))
     op.add_column("wiki", sa.Column("repo_id", sa.Integer,
                 sa.ForeignKey("backing_repo.id")))
 
