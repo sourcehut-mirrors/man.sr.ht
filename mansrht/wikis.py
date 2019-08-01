@@ -75,11 +75,9 @@ def delete_wiki(wiki, owner, delete_from_backend=False):
         backend.delete_repo(repo.name)
 
     root_wiki = RootWiki.query.all()
-    if root_wiki:
-        root_wiki = Wiki.query.filter(Wiki.id == root_wiki[0].id).first()
-        if root_wiki and wiki == root_wiki:
-            db.session.delete(root_wiki)
-            db.session.flush()
+    if root_wiki and root_wiki[0].id == wiki.id:
+        db.session.delete(root_wiki[0])
+        db.session.flush()
 
     db.session.delete(wiki)
     db.session.flush()
