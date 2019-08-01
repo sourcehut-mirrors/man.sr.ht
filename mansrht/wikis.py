@@ -27,10 +27,11 @@ def is_root_wiki(wiki):
         return root_wiki and wiki == root_wiki
     return False
 
-def create_repo(is_new, name, ref, webhook_id, commit=None):
+def create_repo(is_new, name, resource_id, ref, owner, commit=None):
     repo = BackingRepo()
     repo.new = is_new
     repo.name = name
+    repo.resource_id = resource_id
     repo.ref = ref
     if commit:
         repo.commit_sha = commit["id"]
@@ -40,9 +41,14 @@ def create_repo(is_new, name, ref, webhook_id, commit=None):
         repo.commit_time = commit["timestamp"]
         repo.commit_message = commit["message"]
         repo.tree_sha = commit["tree"]
-    repo.webhook_id = webhook_id
 
     db.session.add(repo)
+    db.session.flush()
+
+    backend = GitsrhtBackend(owner)
+    hook = backend.subscribe_repo_postupdate(repo)
+    repo.webhook_id = hook["id"]
+
     db.session.flush()
     db.session.commit()
     return repo
@@ -65,12 +71,16 @@ def create_wiki(valid, owner, wiki_name, repo, visibility, is_root=False):
     return wiki
 
 def delete_wiki(wiki, owner, delete_from_backend=False):
+    backend = GitsrhtBackend(owner)
+    repo = wiki.repo
+
+    wiki_count = Wiki.query.filter(Wiki.owner_id == owner.id).count()
+    if wiki_count == 0:
+        backend.unsubscribe_repo_update()
+        backend.unsubscribe_repo_delete()
+
     # The repo is always removed from the backend table. Deletion of the actual
     # repo is done separately if the user asks for that to be done.
-    repo = wiki.repo
-    backend = GitsrhtBackend(owner)
-    backend.unsubscribe_repo_update(repo)
-
     if delete_from_backend:
         backend.delete_repo(repo.name)
 

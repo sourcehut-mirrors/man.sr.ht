@@ -80,10 +80,22 @@ class RepoBackend(abc.ABC):
     def get_blob(self, repo_name, blob_id): pass
 
     @abc.abstractmethod
-    def subscribe_repo_update(self, repo_name): pass
+    def subscribe_repo_postupdate(self, repo_name): pass
 
     @abc.abstractmethod
-    def unsubscribe_repo_update(self, repo): pass
+    def unsubscribe_repo_postupdate(self, repo): pass
+
+    @abc.abstractmethod
+    def subscribe_repo_update(self): pass
+
+    @abc.abstractmethod
+    def unsubscribe_repo_update(self): pass
+
+    @abc.abstractmethod
+    def subscribe_repo_delete(self): pass
+
+    @abc.abstractmethod
+    def unsubscribe_repo_delete(self): pass
 
 class GitsrhtBackend(RepoBackend):
     """
@@ -120,19 +132,14 @@ class GitsrhtBackend(RepoBackend):
 
     def create_repo(self, repo_name):
         if current_user == self.owner:
-            # This assumes the logged-in user. So we double-check the
-            # permissions match.
             url = f"{self.origin}/api/repos"
-            _request_post(
-                    url, current_user.oauth_token,
-                    data={"name": repo_name})
+            return _request_post(
+                    url, self.owner.oauth_token, data={"name": repo_name})
 
     def delete_repo(self, repo_name):
         if current_user == self.owner:
-            # This assumes the logged-in user. So we double-check the
-            # permissions match.
             url = f"{self.origin}/api/repos/{repo_name}"
-            _request_delete(url, current_user.oauth_token)
+            _request_delete(url, self.owner.oauth_token)
 
     def get_repo_url(self, repo_name):
         return os.path.join(
@@ -171,15 +178,47 @@ class GitsrhtBackend(RepoBackend):
             return None
         return r.text
 
-    def subscribe_repo_update(self, repo_name):
-        url = f"{self.api_url}/repos/{repo_name}/webhooks"
+    def subscribe_repo_postupdate(self, repo):
+        url = f"{self.api_url}/repos/{repo.name}/webhooks"
         webhook_data = {
             "url": (origin
-                + url_for("webhooks.notify.ref_update", reponame=repo_name)),
+                + url_for("webhooks.notify.ref_update", repo_id=repo.id)),
             "events": ["repo:post-update"],
         }
-        return _request_post(url, current_user.oauth_token, data=webhook_data)
+        return _request_post(url, self.owner.oauth_token, data=webhook_data)
 
-    def unsubscribe_repo_update(self, repo):
+    def unsubscribe_repo_postupdate(self, repo):
         url = f"{self.api_url}/repos/{repo.name}/webhooks/{repo.webhook_id}"
-        _request_delete(url, current_user.oauth_token)
+        _request_delete(url, self.owner.oauth_token)
+
+    def subscribe_repo_update(self):
+        if current_user == self.owner:
+            url = f"{self.origin}/api/user/webhooks"
+            webhook_data = {
+                "url": origin + url_for("webhooks.notify.repo_update"),
+                "events": ["repo:update"],
+            }
+            return _request_post(
+                    url, self.owner.oauth_token, data=webhook_data)
+
+    def unsubscribe_repo_update(self):
+        if current_user == self.owner:
+            url = "{}/api/user/webhooks/{}".format(
+                    self.origin, self.owner.repo_update_webhook)
+            _request_delete(url, self.owner.oauth_token)
+
+    def subscribe_repo_delete(self):
+        if current_user == self.owner:
+            url = f"{self.origin}/api/user/webhooks"
+            webhook_data = {
+                "url": origin + url_for("webhooks.notify.repo_delete"),
+                "events": ["repo:delete"],
+            }
+            return _request_post(
+                    url, self.owner.oauth_token, data=webhook_data)
+
+    def unsubscribe_repo_delete(self):
+        if current_user == self.owner:
+            url = "{}/api/user/webhooks/{}".format(
+                    self.origin, self.owner.repo_delete_webhook)
+            _request_delete(url, self.owner.oauth_token)

@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, abort, request, redirect
 from flask_login import current_user
+from srht.database import db
 from srht.flask import loginrequired, session
 from srht.validation import Validation
 from mansrht.repo import GitsrhtBackend
@@ -45,6 +46,16 @@ def select_ref(backend, wiki_name, repo_name, new_repo):
     return render_template(
             "select.html", typename="ref", typename_pretty="ref",
             default="wiki", items=sorted(refs, key=lambda x: x.name))
+
+def consolidate_repo_webhooks(owner):
+    backend = GitsrhtBackend(owner)
+    if owner.repo_update_webhook is None:
+        hook = backend.subscribe_repo_update()
+        owner.repo_update_webhook = hook["id"]
+    if owner.repo_delete_webhook is None:
+        hook = backend.subscribe_repo_delete()
+        owner.repo_delete_webhook = hook["id"]
+    db.session.commit()
 
 @create.route("/wiki/create")
 @loginrequired
@@ -128,16 +139,17 @@ def select_ref_POST():
         return select_ref(backend, wiki_name, repo_name,
                 new_repo, **valid.kwargs)
 
+    repo_dict = backend.get_repo(repo_name)
     if new_repo:
         # Check if a repo with the same name already exists.
         # If it does, we treat it as an error.
         valid.expect(
-                backend.get_repo(repo_name) is None,
+                repo_dict is None,
                 "Repository already exists.",
                 field="repo")
         if not valid.ok:
             return select_repo(backend, wiki_name, **valid.kwargs)
-        backend.create_repo(repo_name)
+        repo_dict = backend.create_repo(repo_name)
 
     # Try to find the latest commit if we're using an existing repo + ref.
     new_ref = request.path.endswith("new")
@@ -145,10 +157,11 @@ def select_ref_POST():
     if not new_repo and not new_ref:
         commit = backend.get_latest_commit(repo_name, ref_name)
 
-    hook = backend.subscribe_repo_update(repo_name)
+    consolidate_repo_webhooks(current_user)
+
     repo = create_repo(
-            new_repo, repo_name, ref_name,
-            hook["id"], commit=commit)
+            new_repo, repo_dict["name"], repo_dict["id"], ref_name,
+            current_user, commit=commit)
     create_wiki(
             valid, current_user, wiki_name,
             repo, visibility, is_root=is_root)
