@@ -14,6 +14,7 @@ import os
 import pygit2
 import subprocess
 import sys
+import re
 from gitsrht.git import Repository as GitRepository, commit_time
 from gitsrht.repos import GitRepoApi
 from gitsrht.types import Repository, User
@@ -26,6 +27,8 @@ admin = sys.argv[1]
 root_wiki = sys.argv[2]
 man_repos = sys.argv[3]
 git_repos = cfg("git.sr.ht", "repos")
+
+name_re = re.compile(r"[^A-Za-z0-9._-]")
 
 db = DbSession(cfg("git.sr.ht", "connection-string"))
 db.init()
@@ -49,14 +52,19 @@ def migrate_repo(path, username, repo_name, is_root=False):
             ).one_or_none()
         if git_repo:
             new = False
-            with GitRepository(git_repo.path) as existing:
-                if not existing.is_empty:
-                    ref = "wiki"
-                    n = 1
-                    while f"refs/heads/{ref}" in existing.references:
-                        ref = f"wiki-{n}"
-                        n += 1
+            try:
+                with GitRepository(git_repo.path) as existing:
+                    if not existing.is_empty:
+                        ref = "wiki"
+                        n = 1
+                        while f"refs/heads/{ref}" in existing.references:
+                            ref = f"wiki-{n}"
+                            n += 1
+            except:
+                print("Skipping - couldn't load repo")
+                return
         else:
+            repo_name = name_re.sub("_", repo_name)
             valid = Validation({
                 "name": repo_name,
                 "description": "auto-created from man.sr.ht wiki",

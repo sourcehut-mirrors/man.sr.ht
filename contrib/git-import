@@ -16,6 +16,8 @@ db = DbSession(cfg("man.sr.ht", "connection-string"))
 db.init()
 
 def import_repo(repo, is_root=False):
+    if repo is None:
+        return
     username = repo["owner"]
     repo_name = repo["name"]
     print(f"Importing ~{username}/{repo_name}")
@@ -26,7 +28,7 @@ def import_repo(repo, is_root=False):
     login_user(user)
     wiki = (Wiki.query
             .filter(Wiki.name == repo_name)
-            .filter(Wiki.owner_id == user.id)).one_or_none()
+            .filter(Wiki.owner_id == user.id)).first()
     if not wiki:
         print("Skipping: wiki not found")
         return
