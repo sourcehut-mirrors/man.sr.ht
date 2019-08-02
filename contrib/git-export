@@ -37,9 +37,6 @@ repo_api = GitRepoApi()
 def migrate_repo(path, username, repo_name, is_root=False):
     print(f"Importing ~{username}/{repo_name}", file=sys.stderr)
     with GitRepository(path) as repo:
-        if repo.is_empty:
-            print("Skipping - empty wiki", file=sys.stderr)
-            return
         user = User.query.filter(User.username == username).one_or_none()
         if not user:
             print("Skipping - unknown user", file=sys.stderr)
@@ -65,6 +62,7 @@ def migrate_repo(path, username, repo_name, is_root=False):
                 return
         else:
             repo_name = name_re.sub("_", repo_name)
+            repo_name = repo_name[0].lower() + repo_name[1:]
             valid = Validation({
                 "name": repo_name,
                 "description": "auto-created from man.sr.ht wiki",
@@ -75,28 +73,44 @@ def migrate_repo(path, username, repo_name, is_root=False):
                 print(f"Skipping - validation errors: {valid.response}",
                         file=sys.stderr)
                 return
-        proc = subprocess.run([
-            "git", "-C", path,
-            "push", git_repo.path, f"master:{ref}"],
-            stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-        if proc.returncode != 0:
-            print("Error during git push: " + str(proc.stdout), file=sys.stderr)
-            return
-        db.session.flush()
-        commit = repo.get(repo.head.target)
-        return {
-            "id": git_repo.id,
-            "new": new,
-            "name": repo_name,
-            "owner": user.username,
-            "ref": ref,
-            "commit_sha": str(commit.oid),
-            "commit_author": commit.author.name,
-            "commit_email": commit.author.email,
-            "commit_time": commit_time(commit).strftime(DATE_FORMAT),
-            "commit_message": commit.message,
-            "tree_sha": str(commit.tree_id),
-        }
+        if not repo.is_empty:
+            proc = subprocess.run([
+                "git", "-C", path,
+                "push", git_repo.path, f"master:{ref}"],
+                stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+            if proc.returncode != 0:
+                print("Error during git push: " + str(proc.stdout), file=sys.stderr)
+                return
+            db.session.commit()
+            commit = repo.get(repo.head.target)
+            return {
+                "id": git_repo.id,
+                "new": new,
+                "name": repo_name,
+                "owner": user.username,
+                "ref": ref,
+                "commit_sha": str(commit.oid),
+                "commit_author": commit.author.name,
+                "commit_email": commit.author.email,
+                "commit_time": commit_time(commit).strftime(DATE_FORMAT),
+                "commit_message": commit.message,
+                "tree_sha": str(commit.tree_id),
+            }
+        else:
+            db.session.commit()
+            return {
+                "id": git_repo.id,
+                "new": new,
+                "name": repo_name,
+                "owner": user.username,
+                "ref": ref,
+                "commit_sha": None,
+                "commit_author": None,
+                "commit_email": None,
+                "commit_time": None,
+                "commit_message": None,
+                "tree_sha": None,
+            }
 
 manifests = []
 root = migrate_repo(os.path.join(man_repos, "root"), admin, root_wiki, is_root=True)
