@@ -14,10 +14,7 @@ def ref_update(repo_id):
     payload = json.loads(request.data.decode("utf-8"))
     if event != "repo:post-update":
         return f"Unexpected event {event}"
-    owner = User.query.filter(
-            User.username.like(payload["pusher"]["name"])).one_or_none()
     wiki = (Wiki.query.join(Wiki.repo)
-            .filter(Wiki.owner_id == owner.id)
             .filter(BackingRepo.id == repo_id)).one_or_none()
     repo = wiki.repo
     for ref in payload["refs"]:
