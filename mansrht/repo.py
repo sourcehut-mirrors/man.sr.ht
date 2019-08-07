@@ -116,11 +116,11 @@ class GitsrhtBackend(RepoBackend):
 
     def get_repos(self):
         url = f"{self.api_user_url}/repos"
-        yield from get_results(url, current_user.oauth_token)
+        yield from get_results(url, self.owner.oauth_token)
 
     def get_repo(self, repo_name):
         url = f"{self.api_user_url}/repos/{repo_name}"
-        return _request_get(url, current_user.oauth_token)
+        return _request_get(url, self.owner.oauth_token)
 
     def create_repo(self, repo_name):
         if current_user == self.owner:
@@ -139,7 +139,7 @@ class GitsrhtBackend(RepoBackend):
 
     def get_refs(self, repo_name):
         url = f"{self.api_user_url}/repos/{repo_name}/refs"
-        for ref in get_results(url, current_user.oauth_token):
+        for ref in get_results(url, self.owner.oauth_token):
             if not ref["name"].startswith("refs/heads/"):
                 continue
             yield ref
@@ -151,19 +151,19 @@ class GitsrhtBackend(RepoBackend):
 
     def get_latest_commit(self, repo_name, ref):
         url = f"{self.api_user_url}/repos/{repo_name}/log/{ref}"
-        return _request_get(url, current_user.oauth_token).get("results")[0]
+        return _request_get(url, self.owner.oauth_token).get("results")[0]
 
     def get_tree(self, repo_name, ref, path=None):
         url = f"{self.api_user_url}/repos/{repo_name}/tree/{ref}"
         if path:
             url = os.path.join(url, path)
-        return _request_get(url, current_user.oauth_token)
+        return _request_get(url, self.owner.oauth_token)
 
     def get_blob(self, repo_name, blob_id):
         # TODO: Perhaps get_blob() should do all the tree-traversal for us?
         url = f"{self.api_user_url}/blob/{repo_name}/blob/{blob_id}"
         r = requests.get(
-            url, headers={"Authorization": f"token {current_user.oauth_token}"})
+            url, headers={"Authorization": f"token {self.owner.oauth_token}"})
 
         plaintext = r.headers.get("content-type", "").startswith("text/plain")
         if r.status_code != 200 or not plaintext:
