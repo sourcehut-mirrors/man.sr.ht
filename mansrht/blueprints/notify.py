@@ -16,6 +16,8 @@ def ref_update(repo_id):
         return f"Unexpected event {event}"
     wiki = (Wiki.query.join(Wiki.repo)
             .filter(BackingRepo.id == repo_id)).one_or_none()
+    if not wiki:
+        return "I don't recognize this wiki"
     repo = wiki.repo
     for ref in payload["refs"]:
         if ref["name"] == f"refs/heads/{repo.ref}":
