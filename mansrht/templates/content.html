@@ -8,9 +8,9 @@
 {% endblock %}
 {% block content %}
 {% if not is_root or len(path) != 0 %}
-<div class="container-fluid">
-  <div class="row">
-    <div class="col-md-12 header-tabbed">
+<div class="header-tabbed">
+  <div class="container">
+    <ul class="nav nav-tabs">
       <h2>
         {% if wiki and not is_root %}
           {{wiki.owner.canonical_name}}/{{wiki.name}}/{{title}}
@@ -18,86 +18,111 @@
           {{title}}
         {% endif %}
       </h2>
-      <ul class="nav nav-tabs">
-        <li class="nav-item">
-          <a class="nav-link active" href="/">article</a>
-        </li>
-      </ul>
-    </div>
+      <li class="nav-item">
+        <a class="nav-link active" href="/">article</a>
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          href="{{web_url}}/tree/{{repo.ref}}/{{'/'.join(path)}}"
+        >source</a>
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          href="{{web_url}}/log"
+        >history</a>
+      </li>
+    </ul>
   </div>
 </div>
 {% endif %}
 <div class="container">
-  <div class="toc">
-    {% if len(toc) != 0 %}
-    <h3>Table of Contents</h3>
-    <ul style="list-style: none; padding-left: 0;">
-      {% macro toc_entry(entry, depth) %}
-      <li>
-        <a href="#{{ entry.id }}">{{ entry.name }}</a>
-        {% if len(entry.children) > 0 %}
-        <ul style="list-style: none; padding-left: {{ depth + 1 }}rem">
-          {% for child in entry.children %}
-            {{ toc_entry(child, depth + 1) }}
-          {% endfor %}
-        </ul>
-        {% endif %}
-      </li>
-      {% endmacro %}
-      {% for entry in toc %}
-        {{ toc_entry(entry, 0) }}
-      {% endfor %}
-    </ul>
-    {% endif %}
-    {# TODO
-    <div class="pull-right" style="margin-bottom: 1rem">
-      <a href="#">Edit page</a>
+  <div class="content">
+    {{ firstpara }}
+  </div>
+</div>
+{% if frontmatter.get("toc", True) %}
+<div class="container">
+  <div class="event-list row">
+    <div class="event toc col-md-12">
+      {% if len(toc) != 0 %}
+      <h3>Table of Contents</h3>
+      <ol>
+        {% macro toc_entry(entry, depth) %}
+        <li>
+          <a href="#{{ entry.id }}">{{ entry.name }}</a>
+          {% if len(entry.children) > 0 %}
+          <ul style="list-style: none; padding-left: {{ depth + 1 }}rem">
+            {% for child in entry.children %}
+              {{ toc_entry(child, depth + 1) }}
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </li>
+        {% endmacro %}
+        {% for entry in toc %}
+          {{ toc_entry(entry, 0) }}
+        {% endfor %}
+      </ol>
+      {% endif %}
+      {# TODO
+      <div class="pull-right" style="margin-bottom: 1rem">
+        <a href="#">Edit page</a>
+      </div>
+      #}
     </div>
-    #}
-    <h4>This commit</h4>
-    <div class="clearfix"></div>
-    <div class="card" style="padding: 0.25rem; border: none; border-radius: 0; margin-bottom: 0.5rem">
-<pre class="card-text">commit <a
-  href="{{web_url}}/commit/{{repo.commit_sha}}"
+  </div>
+</div>
+{% endif %}
+<div class="container" style="flex-grow: 1">
+  <div class="content">
+    {{ content }}
+  </div>
+</div>
+<div class="container">
+  <h3>About this wiki</h3>
+  <div class="row">
+    <div class="col-md-8">
+      <pre>commit <a
+href="{{web_url}}/commit/{{repo.commit_sha}}"
 >{{ repo.commit_sha }}</a>
 Author: {{ repo.commit_author }} &lt;{{ repo.commit_email }}&gt;
 Date:   {{ repo.commit_time }}
 
 {{ repo.commit_message.rstrip("\n") }}</pre>
+      <dl>
+        <dt><strong>Clone this wiki</strong></dt>
+        <dd>
+        {% for url in clone_urls|map(attribute="url") %}
+          {% if "://" in url %}
+          <a href={{ url }}>{{ url }}</a>
+          <span class="text-muted pull-right">(read-only)</span><br />
+          {% else %}
+          <code>{{url}}</code>
+          <span class="text-muted pull-right">(read/write)</span><br />
+          {% endif %}
+        {% endfor %}
+        </dd>
+      </dl>
     </div>
-    <dl>
-      <dt>Clone this wiki</dt>
-      <dd>
-      {% for url in clone_urls|map(attribute="url") %}
-        {% if "://" in url %}
-        <a href={{ url }}>{{ url }}</a>
-        <span class="text-muted pull-right">(read-only)</span>
-        {% else %}
-        <code>{{url}}</code>
-        <span class="text-muted pull-right">(read/write)</span>
+    <div class="col-md-4">
+      {% if current_user %}
+        {% if wiki and wiki.owner.username == current_user.username %}
+        <a
+          href="{{ url_for("manage.info",
+            owner_name=wiki.owner.canonical_name, wiki_name=wiki.name) }}"
+          class="btn btn-default btn-block"
+        >Manage your wiki</a>
         {% endif %}
-      {% endfor %}
-      </dd>
-    </dl>
-    {% if current_user %}
-      <hr />
-      {% if wiki and wiki.owner.username == current_user.username %}
-      <a
-        href="{{ url_for("manage.info",
-          owner_name=wiki.owner.canonical_name, wiki_name=wiki.name) }}"
-        class="btn btn-default btn-block"
-      >Manage your wiki</a>
+        {% if is_root %}
+        <a
+          href="{{ url_for("create.create_GET") }}"
+          class="btn btn-primary btn-block"
+        >Create a wiki {{icon("caret-right")}}</a>
+        {% endif %}
       {% endif %}
-      {% if is_root %}
-      <a
-        href="{{ url_for("create.create_GET") }}"
-        class="btn btn-primary btn-block"
-      >Create a wiki {{icon("caret-right")}}</a>
-      {% endif %}
-    {% endif %}
-  </div>
-  <div class="content">
-    {{ content }}
+    </div>
   </div>
 </div>
 {% endblock %}

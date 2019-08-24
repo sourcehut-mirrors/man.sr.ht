@@ -93,10 +93,12 @@ def content(wiki, path, is_root=False, **kwargs):
     html_cachekey = f"man.sr.ht:content:{cachekey}"
     frontmatter_cachekey = f"man.sr.ht:frontmatter:{cachekey}"
     html = redis.get(html_cachekey)
-    if not html:
+    if True or not html:
         md = get_blob(backend, wiki, blob_id)
         if md is None:
             abort(404)
+        if isinstance(md, bytes):
+            md = md.decode()
 
         frontmatter = dict()
         if md.startswith("---\n"):
@@ -134,10 +136,13 @@ def content(wiki, path, is_root=False, **kwargs):
     toc = extract_toc(html)
     if "title" in frontmatter:
         title = frontmatter["title"]
+    soup = BeautifulSoup(html, "html.parser")
+    firstpara = soup.find("p").extract()
     return render_template("content.html",
-            content=html, title=title, repo=wiki.repo, toc=toc,
-            wiki=wiki, is_root=is_root, path=path, frontmatter=frontmatter,
-            clone_urls=clone_urls, web_url=web_url, **kwargs)
+            content=Markup(soup), firstpara=Markup(firstpara),
+            title=title, repo=wiki.repo, toc=toc, wiki=wiki, is_root=is_root,
+            path=path, frontmatter=frontmatter, clone_urls=clone_urls,
+            web_url=web_url, **kwargs)
 
 @html.route("/")
 @html.route("/<path:path>")

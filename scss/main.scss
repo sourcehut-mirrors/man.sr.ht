@@ -1,5 +1,12 @@
 @import "base";
 
+html, body {
+  min-height: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 img {
   max-width: 100%;
   display: block;
@@ -18,18 +25,8 @@ h5 {
   border: none !important;
 }
 
-.toc {
-  background: white;
-  padding: 0 1rem;
-  float: right;
-  max-width: 40%;
-  margin-bottom: 1rem;
-
-  @media(max-width: 720px) {
-    float: none;
-    max-width: inherit;
-    padding: 0;
-  }
+.event-list .toc.event {
+  padding: 0.5rem 1rem;
 }
 
 .alert {
