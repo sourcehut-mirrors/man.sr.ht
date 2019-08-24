@@ -48,6 +48,10 @@ h5 {
     margin: 0;
     margin-bottom: 1rem !important;
 
+    @include media-breakpoint-down(sm) {
+      max-width: 100%;
+    }
+
     p {
       flex-grow: 1;
       white-space: normal;
