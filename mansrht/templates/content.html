@@ -99,7 +99,7 @@ Date:   {{ repo.commit_time }}
           <a href={{ url }}>{{ url }}</a>
           <span class="text-muted pull-right">(read-only)</span><br />
           {% else %}
-          <code>{{url}}</code>
+          {{url}}
           <span class="text-muted pull-right">(read/write)</span><br />
           {% endif %}
         {% endfor %}
