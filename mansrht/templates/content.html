@@ -42,11 +42,10 @@
     {{ firstpara }}
   </div>
 </div>
-{% if frontmatter.get("toc", True) %}
+{% if frontmatter.get("toc", True) and len(toc) != 0 %}
 <div class="container">
   <div class="event-list row">
     <div class="event toc col-md-12">
-      {% if len(toc) != 0 %}
       <h3>Table of Contents</h3>
       <ol>
         {% macro toc_entry(entry, depth) %}
@@ -65,7 +64,6 @@
           {{ toc_entry(entry, 0) }}
         {% endfor %}
       </ol>
-      {% endif %}
       {# TODO
       <div class="pull-right" style="margin-bottom: 1rem">
         <a href="#">Edit page</a>
