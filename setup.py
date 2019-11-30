@@ -50,7 +50,7 @@ setup(
   author = 'Drew DeVault',
   author_email = 'sir@cmpwn.com',
   url = 'https://git.sr.ht/~sircmpwn/man.sr.ht',
-  install_requires = ['srht', 'flask-login'],
+  install_requires = ['srht'],
   license = 'AGPL-3.0',
   package_data={
       'mansrht': [

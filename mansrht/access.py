@@ -1,9 +1,9 @@
 from flask import abort
 from datetime import datetime
 from enum import IntFlag
-from flask_login import current_user
 from mansrht.types import User, Wiki, WikiVisibility
 from srht.database import db
+from srht.oauth import current_user
 
 class UserAccess(IntFlag):
     none = 0

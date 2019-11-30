@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, abort, request, redirect, url_for
 from srht.database import db
-from srht.flask import loginrequired
+from srht.oauth import loginrequired
 from srht.validation import Validation
 from mansrht.access import UserAccess, check_access
 from mansrht.repo import GitsrhtBackend
