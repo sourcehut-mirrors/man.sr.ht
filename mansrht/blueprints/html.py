@@ -3,10 +3,10 @@ from flask import Blueprint, render_template, abort, request, redirect
 from srht.flask import session
 from srht.markdown import markdown, extract_toc
 from srht.oauth import UserType, current_user
+from srht.redis import redis
 from srht.validation import Validation
 from scmsrht.urls import get_clone_urls
 from mansrht.access import UserAccess, check_access
-from mansrht.redis import redis
 from mansrht.repo import GitsrhtBackend
 from mansrht.types import User, Wiki, RootWiki
 from mansrht.wikis import is_root_wiki
