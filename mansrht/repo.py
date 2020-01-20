@@ -112,7 +112,7 @@ class GitsrhtBackend(RepoBackend):
 
     @property
     def ssh_format(self):
-        return "{git_user}@{origin}:{user}/{repo}"
+        return git_user + "@{origin}:{user}/{repo}"
 
     def get_repos(self):
         url = f"{self.api_user_url}/repos"
