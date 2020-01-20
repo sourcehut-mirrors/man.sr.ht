@@ -1,12 +1,13 @@
 import requests
 from flask import url_for
 from srht.api import ensure_webhooks, get_authorization, get_results
-from srht.config import get_origin
+from srht.config import cfg, get_origin
 from srht.oauth import current_user
 import abc
 import os
 
 origin = get_origin("man.sr.ht")
+git_user = cfg("git.sr.ht::dispatch", "/usr/bin/gitsrht-keys", "git:git").split(":")[0]
 
 def _request_get(url, user):
     r = requests.get(url, headers=get_authorization(user))
@@ -111,7 +112,7 @@ class GitsrhtBackend(RepoBackend):
 
     @property
     def ssh_format(self):
-        return "git@{origin}:{user}/{repo}"
+        return "{git_user}@{origin}:{user}/{repo}"
 
     def get_repos(self):
         url = f"{self.api_user_url}/repos"
