@@ -1,5 +1,8 @@
+from io import BytesIO
 from bs4 import BeautifulSoup
-from flask import Blueprint, render_template, abort, request, redirect
+from flask import (
+    Blueprint, url_for, render_template, abort, request, redirect, send_file,
+)
 from srht.flask import session
 from srht.markdown import markdown, extract_toc
 from srht.oauth import UserType, current_user
@@ -33,15 +36,30 @@ def get_tree(backend, wiki, sha, path=None):
         tree = json.loads(tree)
     return tree
 
-def get_blob(backend, wiki, sha):
+def get_blob(backend, wiki, sha, path=None):
     cachekey = f"man.sr.ht:blob:{wiki.repo.name}:{sha}"
-    blob = redis.get(cachekey)
-    if not blob:
-        blob = backend.get_blob(wiki.repo.name, sha)
+    ctype_cachekey = f"{cachekey}:content_type"
+    pipe = redis.pipeline()
+    pipe.get(cachekey)
+    pipe.get(ctype_cachekey)
+    blob, ctype = pipe.execute()
+
+    if not blob or not ctype:
+        blob, ctype = backend.get_blob(
+            wiki.repo.name,
+            sha,
+            path=path,
+            return_ctype=True,
+        )
         if not blob:
-            return None
+            return None, None
         redis.setex(cachekey, timedelta(days=7), blob)
-    return blob
+        redis.setex(ctype_cachekey, timedelta(days=7), ctype)
+    else:
+        if isinstance(ctype, bytes):
+            ctype = ctype.decode("utf-8")
+
+    return blob, ctype
 
 def content(wiki, path, is_root=False, **kwargs):
     def find_entry(tree, name):
@@ -50,6 +68,7 @@ def content(wiki, path, is_root=False, **kwargs):
                 return entry
         return None
 
+    link_prefix = kwargs.get('link_prefix')
     backend = GitsrhtBackend(wiki.owner)
     clone_urls = get_clone_urls(
             backend.origin, wiki.owner, wiki.repo, backend.ssh_format)
@@ -88,14 +107,20 @@ def content(wiki, path, is_root=False, **kwargs):
             abort(404)
 
     blob_id = tree["id"]
+    blob_name = tree["name"]
     cachekey = f"{wiki.repo.name}:{blob_id}"
     html_cachekey = f"man.sr.ht:content:{cachekey}"
     frontmatter_cachekey = f"man.sr.ht:frontmatter:{cachekey}"
     html = redis.get(html_cachekey)
     if not html:
-        md = get_blob(backend, wiki, blob_id)
+        md, ctype = get_blob(backend, wiki, blob_id, path=blob_name)
         if md is None:
             abort(404)
+
+        if not ctype.startswith("text/plain"):
+            # Non-text file (img, etc.). Return the raw data
+            return send_file(BytesIO(md), mimetype=ctype)
+
         if isinstance(md, bytes):
             md = md.decode()
 
@@ -117,7 +142,12 @@ def content(wiki, path, is_root=False, **kwargs):
                 md = "<!-- Error parsing YAML frontmatter -->\n\n" + md
                 frontmatter = dict()
         if tree["name"].endswith(".md"):
-            html = markdown(md, ["h1", "h2", "h3", "h4", "h5"], baselevel=3)
+            html = markdown(
+                md,
+                ["h1", "h2", "h3", "h4", "h5"],
+                baselevel=3,
+                link_prefix=link_prefix,
+            )
         else:
             html = Markup(md)
         if current_user:
@@ -159,7 +189,8 @@ def root_content(path=None):
     wiki = Wiki.query.filter(Wiki.id == root_wiki.id).first()
     if not wiki:
         abort(404)
-    return content(wiki, path, is_root=True)
+    link_prefix = url_for("html.root_content", path=path)
+    return content(wiki, path, is_root=True, link_prefix=link_prefix)
 
 # The tilde (~) in the route is necessary in order to differentiate between the
 # root wiki and user wikis.
@@ -173,4 +204,9 @@ def user_content(owner_name, wiki_name, path=None):
     # Redirect to root if it _is_ the root.
     if is_root_wiki(wiki):
         return redirect("/")
-    return content(wiki, path)
+    link_prefix = url_for(
+        "html.user_content",
+        owner_name=owner_name,
+        wiki_name=wiki_name,
+    )
+    return content(wiki, path, link_prefix=link_prefix)

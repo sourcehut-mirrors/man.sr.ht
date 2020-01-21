@@ -157,16 +157,22 @@ class GitsrhtBackend(RepoBackend):
             url = os.path.join(url, path)
         return _request_get(url, self.owner)
 
-    def get_blob(self, repo_name, blob_id):
+    def get_blob(self, repo_name, blob_id, path=None, return_ctype=False):
         # TODO: Perhaps get_blob() should do all the tree-traversal for us?
         url = f"{self.api_user_url}/blob/{repo_name}/blob/{blob_id}"
+        if path is not None:
+            url = f'{url}/{path}'
         r = requests.get(
             url, headers=get_authorization(self.owner))
 
-        plaintext = r.headers.get("content-type", "").startswith("text/plain")
-        if r.status_code != 200 or not plaintext:
-            return None
-        return r.text
+        ctype = r.headers.get("content-type", "")
+        plaintext = ctype.startswith("text/plain")
+
+        if r.status_code != 200:
+            data = None
+        else:
+            data = r.text if plaintext else r.content
+        return (data, ctype) if return_ctype else data
 
     def ensure_repo_postupdate(self, repo):
         url = origin + url_for("webhooks.notify.ref_update", repo_id=repo.id)
