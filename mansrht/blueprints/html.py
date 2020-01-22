@@ -92,7 +92,7 @@ def content(wiki, path, is_root=False, **kwargs):
     html_cachekey = f"man.sr.ht:content:{cachekey}"
     frontmatter_cachekey = f"man.sr.ht:frontmatter:{cachekey}"
     html = redis.get(html_cachekey)
-    if True or not html:
+    if not html:
         md = get_blob(backend, wiki, blob_id)
         if md is None:
             abort(404)
