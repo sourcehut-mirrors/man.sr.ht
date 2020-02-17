@@ -4,7 +4,7 @@ from flask import (
     Blueprint, url_for, render_template, abort, request, redirect, send_file,
 )
 from srht.flask import session
-from srht.markdown import markdown, extract_toc
+from srht.markdown import SRHT_MARKDOWN_VERSION, markdown, extract_toc
 from srht.oauth import UserType, current_user
 from srht.redis import redis
 from srht.validation import Validation
@@ -109,7 +109,7 @@ def content(wiki, path, is_root=False, **kwargs):
     blob_id = tree["id"]
     blob_name = tree["name"]
     cachekey = f"{wiki.repo.name}:{blob_id}"
-    html_cachekey = f"man.sr.ht:content:{cachekey}"
+    html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v1"
     frontmatter_cachekey = f"man.sr.ht:frontmatter:{cachekey}"
     html = redis.get(html_cachekey)
     if not html:
