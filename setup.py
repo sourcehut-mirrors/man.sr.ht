@@ -59,5 +59,8 @@ setup(
           'static/*'
       ]
   },
-  scripts = ['mansrht-migrate']
+  scripts = [
+      'mansrht-initdb',
+      'mansrht-migrate',
+  ]
 )
