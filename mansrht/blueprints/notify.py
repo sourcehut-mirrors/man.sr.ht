@@ -1,4 +1,5 @@
 from flask import Blueprint, request
+from srht.crypto import verify_request_signature
 from srht.database import db
 from srht.flask import csrf_bypass
 from mansrht.types import User, Wiki, BackingRepo
@@ -11,7 +12,8 @@ webhooks_notify = Blueprint("webhooks.notify", __name__)
 @webhooks_notify.route("/webhook/notify/<repo_id>/refs", methods=["POST"])
 def ref_update(repo_id):
     event = request.headers.get("X-Webhook-Event")
-    payload = json.loads(request.data.decode("utf-8"))
+    payload = verify_request_signature(request)
+    payload = json.loads(payload.decode("utf-8"))
     if event != "repo:post-update":
         return f"Unexpected event {event}"
     wiki = (Wiki.query.join(Wiki.repo)
