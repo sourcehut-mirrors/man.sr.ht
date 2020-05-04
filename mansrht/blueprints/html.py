@@ -104,7 +104,8 @@ def content(wiki, path, is_root=False, **kwargs):
                 url[2] += "/"
                 return redirect(urlunparse(url))
         else:
-            abort(404)
+            return render_template("new-wiki.html", wiki=wiki,
+                    clone_url=clone_urls[1], repo=wiki.repo, web_url=web_url)
 
     blob_id = tree["id"]
     blob_name = tree["name"]
