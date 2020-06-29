@@ -6,7 +6,7 @@ from flask import (
 from srht.flask import session
 from srht.markdown import SRHT_MARKDOWN_VERSION, markdown, extract_toc
 from srht.oauth import UserType, current_user
-from srht.redis import redis
+from srht.cache import set_cache, get_cache
 from srht.validation import Validation
 from scmsrht.urls import get_clone_urls
 from mansrht.access import UserAccess, check_access
@@ -26,12 +26,12 @@ def get_tree(backend, wiki, sha, path=None):
     # Cached tree includes the relative path from the root.
     path = path or ""
     cachekey = f"man.sr.ht:tree:{wiki.repo.name}:{sha}:{path}"
-    tree = redis.get(cachekey)
+    tree = get_cache(cachekey)
     if not tree:
         tree = backend.get_tree(wiki.repo.name, sha, path=path)
         if not tree:
             return None
-        redis.setex(cachekey, timedelta(days=7), json.dumps(tree))
+        set_cache(cachekey, timedelta(days=7), json.dumps(tree))
     else:
         tree = json.loads(tree)
     return tree
@@ -39,10 +39,8 @@ def get_tree(backend, wiki, sha, path=None):
 def get_blob(backend, wiki, sha, path=None):
     cachekey = f"man.sr.ht:blob:{wiki.repo.name}:{sha}"
     ctype_cachekey = f"{cachekey}:content_type"
-    pipe = redis.pipeline()
-    pipe.get(cachekey)
-    pipe.get(ctype_cachekey)
-    blob, ctype = pipe.execute()
+    blob = get_cache(cachekey)
+    ctype = get_cache(ctype_cachekey)
 
     if not blob or not ctype:
         blob, ctype = backend.get_blob(
@@ -53,8 +51,8 @@ def get_blob(backend, wiki, sha, path=None):
         )
         if not blob:
             return None, None
-        redis.setex(cachekey, timedelta(days=7), blob)
-        redis.setex(ctype_cachekey, timedelta(days=7), ctype)
+        set_cache(cachekey, timedelta(days=7), blob)
+        set_cache(ctype_cachekey, timedelta(days=7), ctype)
     else:
         if isinstance(ctype, bytes):
             ctype = ctype.decode("utf-8")
@@ -112,7 +110,7 @@ def content(wiki, path, is_root=False, **kwargs):
     cachekey = f"{wiki.repo.name}:{blob_id}"
     html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v1"
     frontmatter_cachekey = f"man.sr.ht:frontmatter:{cachekey}"
-    html = redis.get(html_cachekey)
+    html = get_cache(html_cachekey)
     if not html:
         md, ctype = get_blob(backend, wiki, blob_id, path=blob_name)
         if md is None:
@@ -155,12 +153,12 @@ def content(wiki, path, is_root=False, **kwargs):
             html = html.replace("{{{srht_username}}}", current_user.username)
         else:
             html = html.replace("{{{srht_username}}}", "USERNAME")
-        redis.setex(html_cachekey, timedelta(days=7), html)
-        redis.setex(frontmatter_cachekey,
+        set_cache(html_cachekey, timedelta(days=7), html)
+        set_cache(frontmatter_cachekey,
                 timedelta(days=7), json.dumps(frontmatter))
     else:
         html = Markup(html.decode())
-        frontmatter = redis.get(frontmatter_cachekey)
+        frontmatter = get_cache(frontmatter_cachekey)
         frontmatter = json.loads(frontmatter.decode())
     title = path[-1].rstrip(".md") if path else "index"
     toc = extract_toc(html)
