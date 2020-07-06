@@ -143,7 +143,6 @@ def content(wiki, path, is_root=False, **kwargs):
         if tree["name"].endswith(".md"):
             html = markdown(
                 md,
-                ["h1", "h2", "h3", "h4", "h5"],
                 baselevel=3,
                 link_prefix=link_prefix,
             )
