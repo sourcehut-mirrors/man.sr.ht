@@ -108,7 +108,7 @@ def content(wiki, path, is_root=False, **kwargs):
     blob_id = tree["id"]
     blob_name = tree["name"]
     cachekey = f"{wiki.repo.name}:{blob_id}"
-    html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v1"
+    html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v2"
     frontmatter_cachekey = f"man.sr.ht:frontmatter:{cachekey}"
     html = get_cache(html_cachekey)
     if not html:
@@ -187,7 +187,7 @@ def root_content(path=None):
     wiki = Wiki.query.filter(Wiki.id == root_wiki.id).first()
     if not wiki:
         abort(404)
-    link_prefix = url_for("html.root_content", path=path)
+    link_prefix = os.path.dirname(url_for("html.root_content", path=path))
     return content(wiki, path, is_root=True, link_prefix=link_prefix)
 
 # The tilde (~) in the route is necessary in order to differentiate between the
@@ -202,9 +202,9 @@ def user_content(owner_name, wiki_name, path=None):
     # Redirect to root if it _is_ the root.
     if is_root_wiki(wiki):
         return redirect("/")
-    link_prefix = url_for(
+    link_prefix = os.path.dirname(url_for(
         "html.user_content",
         owner_name=owner_name,
         wiki_name=wiki_name,
-    )
+    ))
     return content(wiki, path, link_prefix=link_prefix)
