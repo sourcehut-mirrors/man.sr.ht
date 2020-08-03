@@ -21,7 +21,7 @@ def validate_name(valid, owner, wiki_name):
 def is_root_wiki(wiki):
     if not wiki:
         return False
-    root_wiki = RootWiki.query.all()
+    root_wiki = RootWiki.query.one_or_none()
     if root_wiki:
         return root_wiki.id == wiki.id
     return False
