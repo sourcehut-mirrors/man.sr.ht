@@ -108,7 +108,7 @@ def content(wiki, path, is_root=False, **kwargs):
     blob_id = tree["id"]
     blob_name = tree["name"]
     cachekey = f"{wiki.repo.name}:{blob_id}"
-    html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v2"
+    html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v3"
     frontmatter_cachekey = f"man.sr.ht:frontmatter:{cachekey}"
     html = get_cache(html_cachekey)
     if not html:
