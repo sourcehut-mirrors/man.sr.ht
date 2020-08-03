@@ -146,8 +146,10 @@ def content(wiki, path, is_root=False, **kwargs):
                 baselevel=3,
                 link_prefix=link_prefix,
             )
-        else:
+        elif is_root:
             html = Markup(md)
+        else:
+            abort(404)
         if current_user:
             html = html.replace("{{{srht_username}}}", current_user.username)
         else:

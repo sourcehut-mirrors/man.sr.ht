@@ -23,8 +23,7 @@ def is_root_wiki(wiki):
         return False
     root_wiki = RootWiki.query.all()
     if root_wiki:
-        root_wiki = Wiki.query.filter(Wiki.id == root_wiki[0].id).first()
-        return root_wiki and wiki == root_wiki
+        return root_wiki.id == wiki.id
     return False
 
 def create_repo(is_new, name, resource_id, ref, owner, commit=None):
