@@ -106,19 +106,24 @@ Date:   {{ repo.commit_time }}
     </div>
     <div class="col-md-4">
       {% if current_user %}
-        {% if wiki and wiki.owner.username == current_user.username %}
-        <a
-          href="{{ url_for("manage.info",
-            owner_name=wiki.owner.canonical_name, wiki_name=wiki.name) }}"
-          class="btn btn-default btn-block"
-        >Manage your wiki</a>
-        {% endif %}
         {% if is_root %}
         <a
           href="{{ url_for("create.create_GET") }}"
           class="btn btn-primary btn-block"
         >Create a wiki {{icon("caret-right")}}</a>
         {% endif %}
+        {% if wiki and wiki.owner.username == current_user.username %}
+        <a
+          href="{{ url_for("manage.info",
+            owner_name=wiki.owner.canonical_name, wiki_name=wiki.name) }}"
+          class="btn btn-default btn-block"
+        >Settings for this wiki {{icon('caret-right')}}</a>
+        {% endif %}
+        <a
+          href="{{ url_for("public.user_index",
+            username=current_user.username) }}"
+          class="btn btn-default btn-block"
+        >Browse your wikis {{icon('caret-right')}}</a>
       {% endif %}
     </div>
   </div>

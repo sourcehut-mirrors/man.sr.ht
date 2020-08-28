@@ -31,11 +31,13 @@ class ManApp(SrhtFlask):
         from mansrht.blueprints.create import create
         from mansrht.blueprints.manage import manage
         from mansrht.blueprints.notify import webhooks_notify
+        from mansrht.blueprints.public import public
 
         self.register_blueprint(html)
         self.register_blueprint(create)
         self.register_blueprint(manage)
         self.register_blueprint(webhooks_notify)
+        self.register_blueprint(public)
 
         self.url_map.strict_slashes = False
 
