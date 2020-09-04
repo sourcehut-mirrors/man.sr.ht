@@ -13,7 +13,7 @@
     <ul class="nav nav-tabs">
       <h2>
         {% if wiki and not is_root %}
-          {{wiki.owner.canonical_name}}/{{wiki.name}}/{{title}}
+          {{wiki.owner.canonical_name}}/<wbr>{{wiki.name}}/<wbr>{{title}}
         {% else %}
           {{title}}
         {% endif %}
