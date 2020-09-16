@@ -22,6 +22,12 @@
       {% if user.bio %}
       {{user.bio | md}}
       {% endif %}
+      {% if current_user and current_user.username == user.username %}
+      <a
+        href="{{url_for('create.create_GET')}}"
+        class="btn btn-primary btn-block"
+      >Create new wiki {{icon("caret-right")}}</a>
+      {% endif %}
       {% if notice %}
       <div class="alert alert-success">
         {{ notice }}
