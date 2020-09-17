@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from flask import (
     Blueprint, url_for, render_template, abort, request, redirect, send_file,
 )
-from srht.flask import session
+from srht.flask import session, date_handler
 from srht.markdown import SRHT_MARKDOWN_VERSION, markdown, extract_toc
 from srht.oauth import UserType, current_user
 from srht.cache import set_cache, get_cache
@@ -156,7 +156,7 @@ def content(wiki, path, is_root=False, **kwargs):
             html = html.replace("{{{srht_username}}}", "USERNAME")
         set_cache(html_cachekey, timedelta(days=7), html)
         set_cache(frontmatter_cachekey,
-                timedelta(days=7), json.dumps(frontmatter))
+                timedelta(days=7), json.dumps(frontmatter, default=date_handler))
     else:
         html = Markup(html.decode())
         frontmatter = get_cache(frontmatter_cachekey)
