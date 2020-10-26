@@ -32,6 +32,15 @@ git push</pre>
         <a href="https://man.sr.ht/man.sr.ht/">documentation</a>.
       </p>
     </div>
+    <div class="col-md-8">
+      {% if wiki.owner.username == current_user.username %}
+        <a
+          href="{{ url_for("manage.info",
+            owner_name=wiki.owner.canonical_name, wiki_name=wiki.name) }}"
+          class="btn btn-default btn-block"
+        >Settings for this wiki {{icon('caret-right')}}</a>
+      {% endif %}
+    </div>
   </div>
 </div>
 {% endblock %}
