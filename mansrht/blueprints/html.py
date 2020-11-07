@@ -169,6 +169,8 @@ def content(wiki, path, is_root=False, **kwargs):
     firstpara = soup.find("p")
     if firstpara:
         firstpara = firstpara.extract()
+    else:
+        firstpara = ""
     return render_template("content.html",
             content=Markup(soup), firstpara=Markup(firstpara),
             title=title, repo=wiki.repo, toc=toc, wiki=wiki, is_root=is_root,
