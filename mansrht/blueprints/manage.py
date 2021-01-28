@@ -52,6 +52,9 @@ def delete_POST(owner_name, wiki_name):
     # check_access() guarantees owner and wiki are valid.
     owner, wiki = check_access(owner_name, wiki_name, UserAccess.manage)
     backend = GitsrhtBackend(owner)
-    backend.unensure_repo_postupdate(wiki.repo)
+    try:
+        backend.unensure_repo_postupdate(wiki.repo)
+    except:
+        pass # Deleted, presumably
     delete_wiki(wiki, owner, delete_repo == "on")
     return redirect("/")
