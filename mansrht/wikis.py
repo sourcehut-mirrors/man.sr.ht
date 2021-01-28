@@ -75,7 +75,10 @@ def delete_wiki(wiki, owner, delete_from_backend=False):
     # The repo is always removed from the backend table. Deletion of the actual
     # repo is done separately if the user asks for that to be done.
     if delete_from_backend:
-        backend.delete_repo(repo.name)
+        try:
+            backend.delete_repo(repo.name)
+        except:
+            pass # Presumably deleted
 
     root_wiki = RootWiki.query.all()
     if root_wiki and root_wiki[0].id == wiki.id:
