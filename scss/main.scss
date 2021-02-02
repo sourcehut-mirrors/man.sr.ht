@@ -1,5 +1,7 @@
 @import "base";
 
+$darker: darken($gray-900, 6);
+
 html, body {
   min-height: 100%;
   height: 100%;
@@ -68,4 +70,8 @@ h5 {
 code.grey {
   background: $gray-200;
   padding: 0 0.25rem;
+
+  @media (prefers-color-scheme: dark) {
+    background: $darker;
+  }
 }
