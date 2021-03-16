@@ -149,7 +149,10 @@ class GitsrhtBackend(RepoBackend):
 
     def get_latest_commit(self, repo_name, ref):
         url = f"{self.api_user_url}/repos/{repo_name}/log/{ref}"
-        return _request_get(url, self.owner).get("results")[0]
+        res = _request_get(url, self.owner)
+        if res is None:
+            return None
+        return res.get("results")[0]
 
     def get_tree(self, repo_name, ref, path=None):
         url = f"{self.api_user_url}/repos/{repo_name}/tree/{ref}"
