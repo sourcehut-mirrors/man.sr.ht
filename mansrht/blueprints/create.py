@@ -30,7 +30,7 @@ def select_repo(backend, wiki_name, **kwargs):
             default=wiki_name, items=sorted(repos, key=lambda x: x.name),
             existing=existing, **kwargs)
 
-def select_ref(backend, wiki_name, repo_name, new_repo):
+def select_ref(backend, wiki_name, repo_name, new_repo, **kwargs):
     refs = []
     if not new_repo:
         try:
@@ -45,7 +45,7 @@ def select_ref(backend, wiki_name, repo_name, new_repo):
     # TODO: Add cancel button.
     return render_template(
             "select.html", typename="ref", typename_pretty="ref",
-            default="wiki", items=sorted(refs, key=lambda x: x.name))
+            default="wiki", items=sorted(refs, key=lambda x: x.name), **kwargs)
 
 @create.route("/wiki/create")
 @loginrequired
@@ -146,6 +146,13 @@ def select_ref_POST():
     commit = None
     if not new_repo and not new_ref:
         commit = backend.get_latest_commit(repo_name, ref_name)
+        valid.expect(
+                commit is not None,
+                "Ref was not found.",
+                field="ref")
+    if not valid.ok:
+        return select_ref(backend, wiki_name, repo_name,
+                new_repo, **valid.kwargs)
 
     backend.ensure_repo_update()
 
