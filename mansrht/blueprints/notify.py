@@ -6,7 +6,7 @@ from mansrht.types import User, Wiki, BackingRepo
 from mansrht.wikis import delete_wiki
 import json
 
-webhooks_notify = Blueprint("webhooks.notify", __name__)
+webhooks_notify = Blueprint("webhooks_notify", __name__)
 
 @csrf_bypass
 @webhooks_notify.route("/webhook/notify/<repo_id>/refs", methods=["POST"])

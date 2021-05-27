@@ -178,19 +178,19 @@ class GitsrhtBackend(RepoBackend):
         return (data, ctype) if return_ctype else data
 
     def ensure_repo_postupdate(self, repo):
-        url = origin + url_for("webhooks.notify.ref_update", repo_id=repo.id)
+        url = origin + url_for("webhooks_notify.ref_update", repo_id=repo.id)
         ensure_webhooks(self.owner,
             f"{self.api_user_url}/repos/{repo.name}/webhooks", {
                 url: ["repo:post-update"],
             })
 
     def unensure_repo_postupdate(self, repo):
-        url = origin + url_for("webhooks.notify.ref_update", repo_id=repo.id)
+        url = origin + url_for("webhooks_notify.ref_update", repo_id=repo.id)
         ensure_webhooks(self.owner,
             f"{self.api_user_url}/repos/{repo.name}/webhooks", { url: None })
 
     def ensure_repo_update(self):
-        url = origin + url_for("webhooks.notify.repo_update")
+        url = origin + url_for("webhooks_notify.repo_update")
         ensure_webhooks(self.owner,
             f"{self.api_url}/user/webhooks", {
                 url: ["repo:update", "repo:delete"],
