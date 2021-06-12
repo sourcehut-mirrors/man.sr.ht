@@ -11,6 +11,8 @@ def validate_name(valid, owner, wiki_name):
         return None
     valid.expect(re.match(r'^[a-z._-][a-z0-9._-]*$', wiki_name),
             "Name must match [a-z._-][a-z0-9._-]*", field="name")
+    valid.expect(wiki_name not in [".", ".."],
+            "Name cannot be '.' or '..'", field="name")
     existing = (Wiki.query
             .filter(Wiki.owner_id == owner.id)
             .filter(Wiki.name.like(wiki_name))
