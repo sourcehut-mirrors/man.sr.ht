@@ -45,23 +45,23 @@
             {{csrf_token()}}
             <input type="hidden" name="{{ typename }}" value="{{ item.name }}" />
             <h4>
-              {% if item.name not in existing %}
-              <button
-                type="submit"
-                class="pull-right btn btn-primary btn-lg"
-              >Select {{ typename_pretty }} {{ icon("caret-right") }}</button>
-              {% else %}
-              <button
-                class="pull-right btn btn-default btn-lg"
-                disabled
-              >Already created</button>
-              {% endif %}
               <a
                 href="{{ item.url }}"
                 target="_blank"
                 rel="noopener"
               >{{ item.name }}</a>
             </h4>
+            {% if typename != "repo" or item.name not in existing %}
+            <button
+              type="submit"
+              class="btn btn-primary btn-lg"
+            >Select {{ typename_pretty }} {{ icon("caret-right") }}</button>
+            {% else %}
+            <button
+              class="pull-right btn btn-default btn-lg"
+              disabled
+            >Already created</button>
+            {% endif %}
           </form>
         {% endfor %}
       </div>
