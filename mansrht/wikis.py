@@ -9,13 +9,15 @@ import os
 def validate_name(valid, owner, wiki_name):
     if not valid.ok:
         return None
-    valid.expect(re.match(r'^[a-z._-][a-z0-9._-]*$', wiki_name),
-            "Name must match [a-z._-][a-z0-9._-]*", field="name")
+    valid.expect(re.match(r'^[A-Za-z0-9._-]+$', wiki_name),
+            "Name must match [A-Za-z0-9._-]+", field="name")
     valid.expect(wiki_name not in [".", ".."],
             "Name cannot be '.' or '..'", field="name")
+    valid.expect(wiki_name not in [".git", ".hg"],
+            "Name must not be '.git' or '.hg'", field="name")
     existing = (Wiki.query
             .filter(Wiki.owner_id == owner.id)
-            .filter(Wiki.name.like(wiki_name))
+            .filter(Wiki.name.ilike(wiki_name.replace('_', '\\_')))
             .first())
     valid.expect(not existing, "This name is already in use.", field="name")
     return None

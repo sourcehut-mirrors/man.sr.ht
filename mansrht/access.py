@@ -16,7 +16,7 @@ def get_wiki(owner_name, wiki_name):
         user = User.query.filter(User.username == owner_name[1:]).first()
         if user:
             wiki = Wiki.query.filter(Wiki.owner_id == user.id)\
-                .filter(Wiki.name == wiki_name).first()
+                .filter(Wiki.name.ilike(wiki_name.replace('_', '\\_'))).first()
         else:
             wiki = None
         return user, wiki
