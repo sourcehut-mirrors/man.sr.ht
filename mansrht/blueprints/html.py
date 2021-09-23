@@ -166,11 +166,12 @@ def content(wiki, path, is_root=False, **kwargs):
     if "title" in frontmatter:
         title = frontmatter["title"]
     soup = BeautifulSoup(html, "html.parser")
-    firstpara = soup.find("p")
-    if firstpara:
-        firstpara = firstpara.extract()
-    else:
-        firstpara = ""
+    firstpara = ""
+    if frontmatter.get("toc", True) and len(toc) != 0:
+        if soup.contents[0].name == "p":
+            firstpara = soup.find("p")
+            if firstpara:
+                firstpara = firstpara.extract()
     return render_template("content.html",
             content=Markup(soup), firstpara=Markup(firstpara),
             title=title, repo=wiki.repo, toc=toc, wiki=wiki, is_root=is_root,
