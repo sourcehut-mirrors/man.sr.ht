@@ -19,13 +19,13 @@ git rm -rf *
 echo "Hello world!" &gt;index.md
 git add index.md
 git commit -m"Initial wiki commit"
-git push</pre>
+git push -u origin {{repo.ref}}</pre>
       {% else %}
       <pre>git clone {{clone_url.url}} &amp;&amp; cd {{repo.name}}
 echo "Hello world!" &gt;index.md
 git add index.md
 git commit -m"Initial wiki commit"
-git push</pre>
+git push -u origin master</pre>
       {% endif %}
       <p>
         For more information, consult the
