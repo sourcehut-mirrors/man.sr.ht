@@ -13,6 +13,7 @@ from mansrht.access import UserAccess, check_access
 from mansrht.repo import GitsrhtBackend
 from mansrht.types import User, Wiki, RootWiki
 from mansrht.wikis import is_root_wiki
+from prometheus_client import Counter
 from datetime import timedelta
 from jinja2 import Markup
 from urllib.parse import urlparse, urlunparse
@@ -22,12 +23,26 @@ import yaml
 
 html = Blueprint('html', __name__)
 
+metrics = type("metrics", tuple(), {
+    c.describe()[0].name: c
+    for c in [
+        Counter("mansrht_tree_cache_access", "Number of tree cache accesses"),
+        Counter("mansrht_tree_cache_miss", "Number of tree cache misses"),
+        Counter("mansrht_blob_cache_access", "Number of blob cache accesses"),
+        Counter("mansrht_blob_cache_miss", "Number of blob cache misses"),
+        Counter("mansrht_markdown_cache_access", "Number of markdown cache accesses"),
+        Counter("mansrht_markdown_cache_miss", "Number of markdown cache misses"),
+    ]
+})
+
 def get_tree(backend, wiki, sha, path=None):
     # Cached tree includes the relative path from the root.
     path = path or ""
     cachekey = f"man.sr.ht:tree:{wiki.repo.name}:{sha}:{path}"
     tree = get_cache(cachekey)
+    metrics.mansrht_tree_cache_access.inc()
     if not tree:
+        metrics.mansrht_tree_cache_miss.inc()
         tree = backend.get_tree(wiki.repo.name, sha, path=path)
         if not tree:
             return None
@@ -41,8 +56,10 @@ def get_blob(backend, wiki, sha, path=None):
     ctype_cachekey = f"{cachekey}:content_type"
     blob = get_cache(cachekey)
     ctype = get_cache(ctype_cachekey)
+    metrics.mansrht_blob_cache_access.inc()
 
     if not blob or not ctype:
+        metrics.mansrht_blob_cache_miss.inc()
         blob, ctype = backend.get_blob(
             wiki.repo.name,
             sha,
@@ -111,7 +128,9 @@ def content(wiki, path, is_root=False, **kwargs):
     html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v3"
     frontmatter_cachekey = f"man.sr.ht:frontmatter:{cachekey}"
     html = get_cache(html_cachekey)
+    metrics.mansrht_markdown_cache_access.inc()
     if not html:
+        metrics.mansrht_markdown_cache_miss.inc()
         md, ctype = get_blob(backend, wiki, blob_id, path=blob_name)
         if md is None:
             abort(404)
