@@ -12,7 +12,7 @@ import os
 ListItem = namedtuple("ListItem", ["name", "url"])
 create = Blueprint('create', __name__)
 
-def select_repo(backend, wiki_name, **kwargs):
+def select_repo(backend, wiki_name, wiki_visibility, **kwargs):
     repos = [
         ListItem(repo["name"], backend.get_repo_url(repo["name"]))
         for repo in backend.get_repos()
@@ -27,10 +27,11 @@ def select_repo(backend, wiki_name, **kwargs):
     # TODO: Add cancel button.
     return render_template(
             "select.html", typename="repo", typename_pretty="repo",
-            default=wiki_name, items=sorted(repos, key=lambda x: x.name),
+            default=wiki_name, default_visibility=wiki_visibility,
+            items=sorted(repos, key=lambda x: x.name),
             existing=existing, **kwargs)
 
-def select_ref(backend, wiki_name, repo_name, new_repo, **kwargs):
+def select_ref(backend, wiki_name, repo_name, repo_visibility, new_repo, **kwargs):
     refs = []
     if not new_repo:
         try:
@@ -74,10 +75,11 @@ def create_POST():
 @loginrequired
 def select_repo_GET():
     wiki_name = session.get("wiki_name")
+    wiki_visibility = session.get("wiki_visibility")
     if not wiki_name:
         return redirect("/wiki/create")
     backend = GitsrhtBackend(current_user)
-    return select_repo(backend, wiki_name)
+    return select_repo(backend, wiki_name, wiki_visibility)
 
 @create.route("/wiki/create/repo", methods=["POST"])
 @create.route("/wiki/create/repo/new", methods=["POST"])
@@ -85,12 +87,17 @@ def select_repo_GET():
 def select_repo_POST():
     valid = Validation(request)
     repo_name = valid.require("repo", friendly_name="Repo")
+    # will not be set (and does not matter) if existing repo selected
+    repo_visibility = valid.optional("visibility",
+            default="public")
     if not valid.ok:
         backend = GitsrhtBackend(current_user)
-        return select_repo(backend, session.get("wiki_name"), **valid.kwargs)
+        wiki_name = session.get("wiki_name")
+        visibility = session.get("wiki_visibility")
+        return select_repo(backend, wiki_name, visibility, **valid.kwargs)
 
     # The repo name is checked at the end of the form.
-    session["wiki_repo"] = (repo_name, request.path.endswith("new"))
+    session["wiki_repo"] = (repo_name, repo_visibility, request.path.endswith("new"))
     return redirect("/wiki/create/ref")
 
 @create.route("/wiki/create/ref")
@@ -104,8 +111,8 @@ def select_ref_GET():
         return redirect("/wiki/create")
 
     backend = GitsrhtBackend(current_user)
-    repo_name, new_repo = wiki_repo
-    return select_ref(backend, wiki_name, repo_name, new_repo)
+    repo_name, repo_visibility, new_repo = wiki_repo
+    return select_ref(backend, wiki_name, repo_name, repo_visibility, new_repo)
 
 @create.route("/wiki/create/ref", methods=["POST"])
 @create.route("/wiki/create/ref/new", methods=["POST"])
@@ -120,14 +127,14 @@ def select_ref_POST():
 
     is_root = session.get("configure_root", False)
     visibility = WikiVisibility(session.get("wiki_visibility", "public"))
-    repo_name, new_repo = wiki_repo
+    repo_name, repo_visibility, new_repo = wiki_repo
     backend = GitsrhtBackend(current_user)
 
     valid = Validation(request)
     ref_name = valid.require("ref", friendly_name="Ref")
     if not valid.ok:
         return select_ref(backend, wiki_name, repo_name,
-                new_repo, **valid.kwargs)
+                repo_visibility, new_repo, **valid.kwargs)
 
     repo_dict = backend.get_repo(repo_name)
     if new_repo:
@@ -138,8 +145,8 @@ def select_ref_POST():
                 "Repository already exists.",
                 field="repo")
         if not valid.ok:
-            return select_repo(backend, wiki_name, **valid.kwargs)
-        repo_dict = backend.create_repo(repo_name)
+            return select_repo(backend, wiki_name, visibility, **valid.kwargs)
+        repo_dict = backend.create_repo(repo_name, repo_visibility)
 
     # Try to find the latest commit if we're using an existing repo + ref.
     new_ref = request.path.endswith("new")
@@ -152,7 +159,7 @@ def select_ref_POST():
                 field="ref")
     if not valid.ok:
         return select_ref(backend, wiki_name, repo_name,
-                new_repo, **valid.kwargs)
+                repo_visibility, new_repo, **valid.kwargs)
 
     backend.ensure_repo_update()
 

@@ -56,7 +56,7 @@ class RepoBackend(abc.ABC):
     def get_repo(self, repo_name): pass
 
     @abc.abstractmethod
-    def create_repo(self, repo_name): pass
+    def create_repo(self, repo_name, repo_visibility): pass
 
     @abc.abstractmethod
     def delete_repo(self, repo_name): pass
@@ -122,10 +122,11 @@ class GitsrhtBackend(RepoBackend):
         url = f"{self.api_user_url}/repos/{repo_name}"
         return _request_get(url, self.owner)
 
-    def create_repo(self, repo_name):
+    def create_repo(self, repo_name, repo_visibility):
         if current_user == self.owner:
             url = f"{self.origin}/api/repos"
-            return _request_post(url, self.owner, data={"name": repo_name})
+            data = {"name": repo_name, "visibility": repo_visibility.upper()}
+            return _request_post(url, self.owner, data=data)
 
     def delete_repo(self, repo_name):
         if current_user == self.owner:
