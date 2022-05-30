@@ -15,7 +15,7 @@ from mansrht.types import User, Wiki, RootWiki
 from mansrht.wikis import is_root_wiki
 from prometheus_client import Counter
 from datetime import timedelta
-from jinja2 import Markup
+from markupsafe import Markup
 from urllib.parse import urlparse, urlunparse
 import json
 import os
