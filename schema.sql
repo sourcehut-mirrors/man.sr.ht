@@ -36,7 +36,7 @@ CREATE TABLE wiki (
 	created timestamp without time zone NOT NULL,
 	updated timestamp without time zone NOT NULL,
 	name character varying(256) NOT NULL,
-	owner_id integer NOT NULL REFERENCES "user"(id),
+	owner_id integer NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
 	visibility character varying NOT NULL,
 	repo_id integer NOT NULL REFERENCES backing_repo(id)
 );
