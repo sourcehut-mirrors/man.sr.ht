@@ -1,6 +1,6 @@
 module git.sr.ht/~sircmpwn/man.sr.ht/api
 
-go 1.19
+go 1.17
 
 require (
 	git.sr.ht/~sircmpwn/core-go v0.0.0-20221025082458-3e69641ef307
