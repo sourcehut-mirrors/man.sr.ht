@@ -1,9 +1,11 @@
-from flask import abort
+from flask import abort, request
 from datetime import datetime
 from enum import IntFlag
 from mansrht.types import User, Wiki, WikiVisibility
 from srht.database import db
+from srht.graphql import exec_gql
 from srht.oauth import current_user
+from srht.validation import Validation
 
 class UserAccess(IntFlag):
     none = 0
@@ -24,7 +26,33 @@ def get_wiki(owner_name, wiki_name):
         # TODO: organizations
         return None, None
 
-def get_access(wiki, user=None):
+def get_repo_access(wiki, owner, user=None):
+    if not user:
+        user = current_user
+    valid = Validation(request)
+    repo = wiki.repo
+    resp = exec_gql("git.sr.ht", """
+    query RepoAccess($repo: String!, $username: String!) {
+        user(username: $username) {
+            repository(name: $repo) {
+                access
+            }
+        }
+    }
+    """, valid=valid, user=user,
+        username=owner.username, repo=repo.name)
+    if not valid.ok:
+        return UserAccess.none
+    try:
+        access = resp["user"]["repository"]["access"]
+        if access == "RW":
+            return UserAccess.read | UserAccess.write
+        else:
+            return UserAccess.read
+    except:
+        return UserAccess.none
+
+def get_access(wiki, owner, user=None):
     if not user:
         user = current_user
     if not wiki:
@@ -37,17 +65,17 @@ def get_access(wiki, user=None):
     if wiki.owner_id == user.id:
         return UserAccess.read | UserAccess.write | UserAccess.manage
     if wiki.visibility == WikiVisibility.private:
-        return UserAccess.none
+        return get_repo_access(wiki, owner, user)
     return UserAccess.read
 
-def has_access(wiki, access, user=None):
-    return access in get_access(wiki, user)
+def has_access(wiki, owner, access, user=None):
+    return access in get_access(wiki, owner, user)
 
 def check_access(owner_name, wiki_name, access):
     owner, wiki = get_wiki(owner_name, wiki_name)
     if not owner or not wiki:
         abort(404)
-    a = get_access(wiki)
+    a = get_access(wiki, owner)
     if not access in a:
         abort(403)
     return owner, wiki
