@@ -77,5 +77,5 @@ def check_access(owner_name, wiki_name, access):
         abort(404)
     a = get_access(wiki, owner)
     if not access in a:
-        abort(403)
+        abort(404)
     return owner, wiki
