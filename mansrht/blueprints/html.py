@@ -167,7 +167,7 @@ def content(wiki, path, is_root=False, **kwargs):
                     md,
                     baselevel=3,
                     link_prefix=link_prefix,
-                    sanitize=False,
+                    sanitize_output=False,
                 )
             else:
                 abort(404)
