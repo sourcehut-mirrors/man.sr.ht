@@ -159,14 +159,24 @@ def content(wiki, path, is_root=False, **kwargs):
             except:
                 md = "<!-- Error parsing YAML frontmatter -->\n\n" + md
                 frontmatter = dict()
-        if tree["name"].endswith(".md"):
+        if is_root:
+            if tree["name"].endswith(".html"):
+                html = Markup(md)
+            elif tree["name"].endswith(".md"):
+                html = markdown(
+                    md,
+                    baselevel=3,
+                    link_prefix=link_prefix,
+                    sanitize=False,
+                )
+            else:
+                abort(404)
+        elif tree["name"].endswith(".md"):
             html = markdown(
                 md,
                 baselevel=3,
                 link_prefix=link_prefix,
             )
-        elif is_root:
-            html = Markup(md)
         else:
             abort(404)
         if current_user:
