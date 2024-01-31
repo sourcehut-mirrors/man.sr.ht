@@ -3,7 +3,7 @@ module git.sr.ht/~sircmpwn/man.sr.ht
 go 1.17
 
 require (
-	git.sr.ht/~sircmpwn/core-go v0.0.0-20231207131428-53966da2d8c2
+	git.sr.ht/~sircmpwn/core-go v0.0.0-20240124105042-864816cfbc0c
 	git.sr.ht/~sircmpwn/dowork v0.0.0-20221010085743-46c4299d76a1
 	github.com/99designs/gqlgen v0.17.36
 	github.com/vektah/gqlparser/v2 v2.5.8
