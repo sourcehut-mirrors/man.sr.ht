@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mansrht"
+dynamic = ["version"]
+description = "man.sr.ht website"
+readme = "README.md"
+authors = [{name = "Drew DeVault", email = "sir@cmpwn.com"}]
+dependencies = [
+    "srht",
+]
+license.text = "AGPL-3.0-only"
+
+[project.urls]
+repository = "https://git.sr.ht/~sircmpwn/man.sr.ht"
+
+[tool.setuptools]
+# This defaults to true, but we explicitly specify what we want included in the
+# package via packages and tool.setuptools.package-data below.
+include-package-data = false
+packages = [
+    "mansrht",
+    "mansrht.alembic",
+    "mansrht.alembic.versions",
+    "mansrht.blueprints",
+    "mansrht.static",
+    "mansrht.static.icons",
+    "mansrht.templates",
+    "mansrht.types",
+]
+script-files = [
+    "mansrht-initdb",
+    "mansrht-migrate",
+]
+[tool.setuptools.package-data]
+"mansrht" = ['default_query.graphql', 'schema.graphqls']
+"mansrht.templates" = ['*.html']
+"mansrht.static" = ['*']
+"mansrht.static.icons" = ['*']
+
+[tool.setuptools_scm]
