@@ -11,7 +11,6 @@ CREATE TABLE "user" (
 	url character varying(256),
 	location character varying(256),
 	bio character varying(4096),
-	oauth_revocation_token character varying(256),
 	suspension_notice character varying(4096)
 );
 
