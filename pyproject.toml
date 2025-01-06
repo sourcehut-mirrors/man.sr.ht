@@ -25,19 +25,15 @@ packages = [
     "mansrht.alembic",
     "mansrht.alembic.versions",
     "mansrht.blueprints",
-    "mansrht.static",
-    "mansrht.static.icons",
     "mansrht.templates",
     "mansrht.types",
 ]
 script-files = [
-    "mansrht-initdb",
-    "mansrht-migrate",
+    "man.sr.ht-initdb",
+    "man.sr.ht-migrate",
 ]
 [tool.setuptools.package-data]
 "mansrht" = ['default_query.graphql', 'schema.graphqls']
 "mansrht.templates" = ['*.html']
-"mansrht.static" = ['*']
-"mansrht.static.icons" = ['*']
 
 [tool.setuptools_scm]
