@@ -7,13 +7,13 @@ CREATE TYPE user_type AS ENUM (
 
 CREATE TABLE "user" (
 	id serial PRIMARY KEY,
-	username character varying(256) UNIQUE,
+	username character varying(256) NOT NULL UNIQUE,
 	created timestamp without time zone NOT NULL,
 	updated timestamp without time zone NOT NULL,
 	oauth_token character varying(256),
 	oauth_token_expires timestamp without time zone,
 	oauth_token_scopes character varying,
-	email character varying(256) NOT NULL,
+	email character varying(256) NOT NULL UNIQUE,
 	user_type user_type NOT NULL,
 	url character varying(256),
 	location character varying(256),
