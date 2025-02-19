@@ -29,7 +29,6 @@ packages = [
     "mansrht.types",
 ]
 script-files = [
-    "man.sr.ht-initdb",
     "man.sr.ht-migrate",
 ]
 [tool.setuptools.package-data]
