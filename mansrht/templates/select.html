@@ -33,7 +33,7 @@
                 class="form-check-label"
                 title="Publically visible and listed on your profile"
               >
-                <input {{ "checked" if default_visibility.value.lower() == "public" }}
+                <input {{ "checked" if default_visibility.lower() == "public" }}
                   class="form-check-input"
                   type="radio"
                   name="visibility"
@@ -45,7 +45,7 @@
                   class="form-check-label"
                   title="Visible to anyone with the link, but not shown on your profile"
               >
-                <input {{ "checked" if default_visibility.value.lower() == "unlisted" }}
+                <input {{ "checked" if default_visibility.lower() == "unlisted" }}
                   class="form-check-input"
                   type="radio"
                   name="visibility"
@@ -57,7 +57,7 @@
                 class="form-check-label"
                 title="Only visible to you and your collaborators"
               >
-                <input {{ "checked" if default_visibility.value.lower() == "private" }}
+                <input {{ "checked" if default_visibility.lower() == "private" }}
                   class="form-check-input"
                   type="radio"
                   name="visibility"
