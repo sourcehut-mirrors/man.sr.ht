@@ -20,7 +20,9 @@ func main() {
 	// TODO: Populate this after scopes have been added to the schema
 	scopes := make([]string, 0)
 
-	accountQueue := work.NewQueue("account")
+	queueSize := config.GetInt(appConfig, "man.sr.ht::api",
+		"account-del-queue-size", config.DefaultQueueSize)
+	accountQueue := work.NewQueue("account", queueSize)
 
 	gsrv := server.NewServer("man.sr.ht", appConfig).
 		WithDefaultMiddleware().
