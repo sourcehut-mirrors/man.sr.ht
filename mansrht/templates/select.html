@@ -33,7 +33,7 @@
                 class="form-check-label"
                 title="Publically visible and listed on your profile"
               >
-                <input {{ "checked" if default_visibility.lower() == "public" }}
+                <input {{ "checked" if default_visibility == "public" }}
                   class="form-check-input"
                   type="radio"
                   name="visibility"

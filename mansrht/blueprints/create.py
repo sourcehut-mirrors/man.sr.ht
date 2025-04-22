@@ -88,8 +88,7 @@ def select_repo_POST():
     valid = Validation(request)
     repo_name = valid.require("repo", friendly_name="Repo")
     # will not be set (and does not matter) if existing repo selected
-    repo_visibility = valid.optional("visibility",
-            default="public")
+    repo_visibility = valid.optional("visibility", default="public")
     if not valid.ok:
         backend = GitsrhtBackend(current_user)
         wiki_name = session.get("wiki_name")
@@ -145,7 +144,7 @@ def select_ref_POST():
                 "Repository already exists.",
                 field="repo")
         if not valid.ok:
-            return select_repo(backend, wiki_name, visibility, **valid.kwargs)
+            return select_repo(backend, wiki_name, visibility.value, **valid.kwargs)
         repo_dict = backend.create_repo(repo_name, repo_visibility)
 
     # Try to find the latest commit if we're using an existing repo + ref.
