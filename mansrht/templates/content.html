@@ -102,7 +102,7 @@ Date:   {{ repo.commit_time }}
 
 {{ repo.commit_message.rstrip("\n") }}</pre>
       <dl>
-        <dt><strong>Clone this wiki</strong></dt>
+        <dt><strong>Clone this wiki</strong>{{" (\"" ~ repo.ref ~ "\" branch)"}}</dt>
         <dd>
         {% for url in clone_urls|map(attribute="url") %}
           {% if "://" in url %}
