@@ -35,54 +35,7 @@ metrics = type("metrics", tuple(), {
     ]
 })
 
-def get_tree(backend, wiki, sha, path=None):
-    # Cached tree includes the relative path from the root.
-    path = path or ""
-    cachekey = f"man.sr.ht:tree:{wiki.repo.name}:{sha}:{path}"
-    tree = get_cache(cachekey)
-    metrics.mansrht_tree_cache_access.inc()
-    if not tree:
-        metrics.mansrht_tree_cache_miss.inc()
-        tree = backend.get_tree(wiki.repo.name, sha, path=path)
-        if not tree:
-            return None
-        set_cache(cachekey, timedelta(days=7), json.dumps(tree))
-    else:
-        tree = json.loads(tree)
-    return tree
-
-def get_blob(backend, wiki, sha, path=None):
-    cachekey = f"man.sr.ht:blob:{wiki.repo.name}:{sha}"
-    ctype_cachekey = f"{cachekey}:content_type"
-    blob = get_cache(cachekey)
-    ctype = get_cache(ctype_cachekey)
-    metrics.mansrht_blob_cache_access.inc()
-
-    if not blob or not ctype:
-        metrics.mansrht_blob_cache_miss.inc()
-        blob, ctype = backend.get_blob(
-            wiki.repo.name,
-            sha,
-            path=path,
-            return_ctype=True,
-        )
-        if not blob:
-            return None, None
-        set_cache(cachekey, timedelta(days=7), blob)
-        set_cache(ctype_cachekey, timedelta(days=7), ctype)
-    else:
-        if isinstance(ctype, bytes):
-            ctype = ctype.decode("utf-8")
-
-    return blob, ctype
-
 def content(wiki, path, is_root=False, **kwargs):
-    def find_entry(tree, name):
-        for entry in tree["entries"]:
-            if entry["name"] == name:
-                return entry
-        return None
-
     link_prefix = kwargs.get('link_prefix')
     backend = GitsrhtBackend(wiki.owner)
     clone_urls = get_clone_urls(
@@ -92,38 +45,26 @@ def content(wiki, path, is_root=False, **kwargs):
         return render_template("new-wiki.html", wiki=wiki,
                 clone_url=clone_urls[1], repo=wiki.repo, web_url=web_url)
 
+    if not path:
+        path = ""
+
+    n = 0
+    item = backend.get_tree_entry(wiki.repo.name, wiki.repo.ref, path=path)
+    while item and item["object"]["type"] == "TREE" and n < 5:
+        item = backend.get_tree_entry(wiki.repo.name, wiki.repo.ref,
+            path=os.path.join(path, "index.md"))
+        if not item and is_root:
+            item = backend.get_tree_entry(wiki.repo.name, wiki.repo.ref,
+                path=os.path.join(path, "index.html"))
+        n += 1
+    if not item or item["object"]["type"] != "BLOB":
+        abort(404)
+
     head, tail = os.path.split(path) if path else (None, None)
     path = tuple(p for p in (head, tail) if p)
-    tree = get_tree(backend, wiki, wiki.repo.tree_sha, path=head)
-    if tree and tail:
-        tree = find_entry(tree, tail)
-    if not tree:
-        abort(404)
-    if tree.get("type") != "blob":
-        tree = get_tree(backend, wiki, tree["id"])
-        if not tree:
-            abort(404)
-        # Redirect directories to / so links work right.
-        if find_entry(tree, "index.md") is not None:
-            tree = find_entry(tree, "index.md")
-            url = urlparse(request.url)
-            if url.path and url.path[-1] != "/":
-                url = list(url)
-                url[2] += "/"
-                return redirect(urlunparse(url))
-        elif is_root and find_entry(tree, "index.html") is not None:
-            tree = find_entry(tree, "index.html")
-            url = urlparse(request.url)
-            if url.path and url.path[-1] != "/":
-                url = list(url)
-                url[2] += "/"
-                return redirect(urlunparse(url))
-        else:
-            return render_template("new-wiki.html", wiki=wiki,
-                    clone_url=clone_urls[1], repo=wiki.repo, web_url=web_url)
 
-    blob_id = tree["id"]
-    blob_name = tree["name"]
+    blob_id = item["object"]["id"]
+    blob_name = item["name"]
     cachekey = f"{wiki.repo.name}:{blob_id}"
     html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v3"
     frontmatter_cachekey = f"man.sr.ht:frontmatter:{cachekey}"
@@ -131,16 +72,10 @@ def content(wiki, path, is_root=False, **kwargs):
     metrics.mansrht_markdown_cache_access.inc()
     if not html:
         metrics.mansrht_markdown_cache_miss.inc()
-        md, ctype = get_blob(backend, wiki, blob_id, path=blob_name)
-        if md is None:
+        md = item["object"]["text"]
+        if not md:
+            # TODO: Return raw blobs?
             abort(404)
-
-        if not ctype.startswith("text/plain"):
-            # Non-text file (img, etc.). Return the raw data
-            return send_file(BytesIO(md), mimetype=ctype)
-
-        if isinstance(md, bytes):
-            md = md.decode()
 
         frontmatter = dict()
         if md.startswith("---\n"):
@@ -160,9 +95,9 @@ def content(wiki, path, is_root=False, **kwargs):
                 md = "<!-- Error parsing YAML frontmatter -->\n\n" + md
                 frontmatter = dict()
         if is_root:
-            if tree["name"].endswith(".html"):
+            if blob_name.endswith(".html"):
                 html = Markup(md)
-            elif tree["name"].endswith(".md"):
+            elif blob_name.endswith(".md"):
                 html = markdown(
                     md,
                     baselevel=3,
@@ -171,7 +106,7 @@ def content(wiki, path, is_root=False, **kwargs):
                 )
             else:
                 abort(404)
-        elif tree["name"].endswith(".md"):
+        elif blob_name.endswith(".md"):
             html = markdown(
                 md,
                 baselevel=3,

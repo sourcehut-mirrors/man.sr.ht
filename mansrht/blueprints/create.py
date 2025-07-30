@@ -13,9 +13,11 @@ ListItem = namedtuple("ListItem", ["name", "url"])
 create = Blueprint('create', __name__)
 
 def select_repo(backend, wiki_name, wiki_visibility, **kwargs):
+    repos, cursor = backend.get_repos()
+
     repos = [
         ListItem(repo["name"], backend.get_repo_url(repo["name"]))
-        for repo in backend.get_repos()
+        for repo in repos
     ]
 
     existing = [
@@ -34,10 +36,7 @@ def select_repo(backend, wiki_name, wiki_visibility, **kwargs):
 def select_ref(backend, wiki_name, repo_name, repo_visibility, new_repo, **kwargs):
     refs = []
     if not new_repo:
-        try:
-            refs = [ref for ref in backend.get_refs(repo_name)]
-        except:
-            abort(500)
+        refs, cursor = backend.get_refs(repo_name)
     if refs:
         refs = [ListItem(
             os.path.split(ref["name"])[1],
@@ -135,17 +134,17 @@ def select_ref_POST():
         return select_ref(backend, wiki_name, repo_name,
                 repo_visibility, new_repo, **valid.kwargs)
 
-    repo_dict = backend.get_repo(repo_name)
+    backend_repo = backend.get_repo(repo_name)
     if new_repo:
         # Check if a repo with the same name already exists.
         # If it does, we treat it as an error.
         valid.expect(
-                repo_dict is None,
+                backend_repo is None,
                 "Repository already exists.",
                 field="repo")
         if not valid.ok:
             return select_repo(backend, wiki_name, visibility.value, **valid.kwargs)
-        repo_dict = backend.create_repo(repo_name, repo_visibility)
+        backend_repo = backend.create_repo(repo_name, repo_visibility)
 
     # Try to find the latest commit if we're using an existing repo + ref.
     new_ref = request.path.endswith("new")
@@ -163,7 +162,7 @@ def select_ref_POST():
     backend.ensure_repo_update()
 
     repo = create_repo(
-            new_repo, repo_dict["name"], repo_dict["id"], ref_name,
+            new_repo, backend_repo["name"], backend_repo["id"], ref_name,
             current_user, commit=commit)
     create_wiki(
             valid, current_user, wiki_name,

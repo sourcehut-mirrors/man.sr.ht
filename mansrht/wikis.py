@@ -41,9 +41,9 @@ def create_repo(is_new, name, resource_id, ref, owner, commit=None):
         repo.commit_author = commit["author"]["name"]
         repo.commit_email = commit["author"]["email"]
         # Directly store the datetime string.
-        repo.commit_time = commit["timestamp"]
+        repo.commit_time = commit["author"]["time"]
         repo.commit_message = commit["message"]
-        repo.tree_sha = commit["tree"]
+        repo.tree_sha = commit["tree"]["id"]
 
     db.session.add(repo)
     db.session.flush()

@@ -1,94 +1,14 @@
-import requests
 from flask import url_for
-from srht.api import ensure_webhooks, get_authorization, get_results
+from srht.api import ensure_webhooks
 from srht.config import cfg, get_origin
+from srht.graphql import exec_gql
 from srht.oauth import current_user
-import abc
 import os
 
 origin = get_origin("man.sr.ht")
 git_user = cfg("git.sr.ht::dispatch", "/usr/bin/gitsrht-keys", "git:git").split(":")[0]
 
-def _request_get(url, user):
-    r = requests.get(url, headers=get_authorization(user))
-    if r.status_code == 404:
-        # We treat "resource not found" as a non-error.
-        return None
-    elif r.status_code != 200:
-        raise Exception(r.json())
-    return r.json()
-
-def _request_post(url, user, data=None):
-    r = requests.post(url, json=data, headers=get_authorization(user))
-    if r.status_code != 201:
-        raise Exception(r.text)
-    return r.json()
-
-def _request_delete(url, user):
-    r = requests.delete(url, headers=get_authorization(user))
-    if r.status_code != 204:
-        raise Exception(r.text)
-
-class RepoBackend(abc.ABC):
-    """
-    Abstraction for wiki-related API calls to a scm backend.
-
-    Implementations are expected to make requests to the appropriate backend
-    in-order for man.sr.ht to access/modify wikis.
-    """
-
-    @property
-    @abc.abstractmethod
-    def origin(self): pass
-
-    @property
-    @abc.abstractmethod
-    def origin_ext(self): pass
-
-    @property
-    @abc.abstractmethod
-    def ssh_format(self): pass
-
-    @abc.abstractmethod
-    def get_repos(self): pass
-
-    @abc.abstractmethod
-    def get_repo(self, repo_name): pass
-
-    @abc.abstractmethod
-    def create_repo(self, repo_name, repo_visibility): pass
-
-    @abc.abstractmethod
-    def delete_repo(self, repo_name): pass
-
-    @abc.abstractmethod
-    def get_repo_url(self, repo_name): pass
-
-    @abc.abstractmethod
-    def get_refs(self, repo_name): pass
-
-    @abc.abstractmethod
-    def get_ref_url(self, repo_name, ref): pass
-
-    @abc.abstractmethod
-    def get_latest_commit(self, repo_name, ref): pass
-
-    @abc.abstractmethod
-    def get_tree(self, repo_name, ref, path=None): pass
-
-    @abc.abstractmethod
-    def get_blob(self, repo_name, blob_id): pass
-
-    @abc.abstractmethod
-    def ensure_repo_postupdate(self, repo_name): pass
-
-    @abc.abstractmethod
-    def unensure_repo_postupdate(self, repo): pass
-
-    @abc.abstractmethod
-    def ensure_repo_update(self): pass
-
-class GitsrhtBackend(RepoBackend):
+class GitsrhtBackend():
     """
     git.sr.ht-based backend for man.sr.ht.
     """
@@ -97,7 +17,6 @@ class GitsrhtBackend(RepoBackend):
     _origin_ext = get_origin("git.sr.ht", external=True)
 
     def __init__(self, owner):
-        super(GitsrhtBackend, self).__init__()
         self.owner = owner
         self.api_url = f"{self.origin}/api"
         self.api_user_url = f"{self.api_url}/{owner.canonical_name}"
@@ -114,70 +33,139 @@ class GitsrhtBackend(RepoBackend):
     def ssh_format(self):
         return git_user + "@{origin}:{user}/{repo}"
 
-    def get_repos(self):
-        url = f"{self.api_user_url}/repos"
-        yield from get_results(url, self.owner)
+    def get_repos(self, cursor=None):
+        r = exec_gql("git.sr.ht", """
+        query GetRepos($cursor: Cursor) {
+            me {
+                repositories(cursor: $cursor) {
+                    cursor
+                    results {
+                        id
+                        name
+                    }
+                }
+            }
+        }
+        """, cursor=cursor)
+        repos = r["me"]["repositories"]
+        return repos["results"], repos["cursor"]
 
     def get_repo(self, repo_name):
-        url = f"{self.api_user_url}/repos/{repo_name}"
-        return _request_get(url, self.owner)
+        r = exec_gql("git.sr.ht", """
+        query GetRepo($name: String!) {
+            me {
+                repository(name: $name) {
+                    id
+                    name
+                }
+            }
+        }
+        """, name=repo_name)
+        return r["me"]["repository"]
 
     def create_repo(self, repo_name, repo_visibility):
-        if current_user == self.owner:
-            url = f"{self.origin}/api/repos"
-            data = {"name": repo_name, "visibility": repo_visibility.upper()}
-            return _request_post(url, self.owner, data=data)
+        # TODO: Convert man.sr.ht visibility type to uppercase
+        r = exec_gql("git.sr.ht", """
+        mutation CreateRepo($name: String!, $visibility: Visibility!) {
+            createRepository(name: $name, visibility: $visibility) {
+                id
+                name
+            }
+        }
+        """, name=repo_name, visibility=repo_visibility.upper())
+        return r["createRepository"]
 
     def delete_repo(self, repo_name):
-        if current_user == self.owner:
-            url = f"{self.origin}/api/repos/{repo_name}"
-            _request_delete(url, self.owner)
+        repo = get_repo(self, repo_name)
+
+        exec_gql("git.sr.ht", """
+        mutation DeleteRepo($id: Int!) {
+            deleteRepository(id: $id) { id }
+        }
+        """, id=repo["id"])
 
     def get_repo_url(self, repo_name):
         return os.path.join(self.origin_ext,
                 self.owner.canonical_name, repo_name)
 
-    def get_refs(self, repo_name):
-        url = f"{self.api_user_url}/repos/{repo_name}/refs"
-        for ref in get_results(url, self.owner):
-            if not ref["name"].startswith("refs/heads/"):
-                continue
-            yield ref
+    def get_refs(self, repo_name, cursor=None):
+        r = exec_gql("git.sr.ht", """
+        query GetRefs($name: String!, $cursor: Cursor) {
+            me {
+                repository(name: $name) {
+                    references(cursor: $cursor) {
+                        cursor
+                        results {
+                            name
+                        }
+                    }
+                }
+            }
+        }
+        """, name=repo_name, cursor=cursor)
+        refs = r["me"]["repository"]["references"]
+        return [
+                r for r in refs["results"] if r["name"].startswith("refs/heads/")
+        ], refs["cursor"]
 
     def get_ref_url(self, repo_name, ref):
         return os.path.join(self.origin_ext,
                 self.owner.canonical_name, repo_name, ref)
 
     def get_latest_commit(self, repo_name, ref):
-        url = f"{self.api_user_url}/repos/{repo_name}/log/{ref}"
-        res = _request_get(url, self.owner)
-        if res is None:
+        r = exec_gql("git.sr.ht", """
+        query GetLatestCommit($name: String!, $ref: String!) {
+            me {
+                repository(name: $name) {
+                    log(from: $ref) {
+                        results {
+                            id
+                            author {
+                                name
+                                email
+                                time
+                            }
+                            message
+                            tree {
+                                id
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """, name=repo_name, ref=ref)
+        log = r["me"]["repository"]["log"]["results"]
+        if len(log) == 0:
             return None
-        return res.get("results")[0]
+        return log[0]
 
-    def get_tree(self, repo_name, ref, path=None):
-        url = f"{self.api_user_url}/repos/{repo_name}/tree/{ref}"
-        if path:
-            url = os.path.join(url, path)
-        return _request_get(url, self.owner)
+    def get_tree_entry(self, repo_name, ref, path=None):
+        if not path:
+            return { "object": { "type": "TREE" } } # root
 
-    def get_blob(self, repo_name, blob_id, path=None, return_ctype=False):
-        # TODO: Perhaps get_blob() should do all the tree-traversal for us?
-        url = f"{self.api_user_url}/blob/{repo_name}/blob/{blob_id}"
-        if path is not None:
-            url = f'{url}/{path}'
-        r = requests.get(
-            url, headers=get_authorization(self.owner))
+        r = exec_gql("git.sr.ht", """
+        query GetTree($name: String!, $ref: String!, $path: String!) {
+            me {
+                repository(name: $name) {
+                    path(revspec: $ref, path: $path) {
+                        name
+                        object {
+                            id
+                            type
 
-        ctype = r.headers.get("content-type", "")
-        plaintext = ctype.startswith("text/plain")
+                            ... on TextBlob {
+                                text
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """, name=repo_name, ref=ref, path=path)
+        return r["me"]["repository"]["path"]
 
-        if r.status_code != 200:
-            data = None
-        else:
-            data = r.text if plaintext else r.content
-        return (data, ctype) if return_ctype else data
-
+    # TODO: Drop webhooks
     def ensure_repo_postupdate(self, repo):
         url = origin + url_for("webhooks_notify.ref_update", repo_id=repo.id)
         ensure_webhooks(self.owner,
