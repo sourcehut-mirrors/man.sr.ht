@@ -76,10 +76,10 @@ def content(wiki, path, is_root=False, **kwargs):
     metrics.mansrht_markdown_cache_access.inc()
     if not html:
         metrics.mansrht_markdown_cache_miss.inc()
-        md = item["object"]["text"]
-        if not md:
+        if not "text" in item["object"]:
             # TODO: Return raw blobs?
             abort(404)
+        md = item["object"]["text"]
 
         frontmatter = dict()
         if md.startswith("---\n"):
