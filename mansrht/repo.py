@@ -162,7 +162,7 @@ class GitsrhtBackend():
                 }
             }
         }
-        """, name=repo_name, ref=ref, path=path)
+        """, name=repo_name, ref=ref, path=path, user=self.owner)
         return r["me"]["repository"]["path"]
 
     # TODO: Drop webhooks
