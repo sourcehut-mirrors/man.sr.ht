@@ -8,7 +8,6 @@ from srht.markdown import SRHT_MARKDOWN_VERSION, markdown, extract_toc
 from srht.oauth import UserType, current_user
 from srht.cache import set_cache, get_cache
 from srht.validation import Validation
-from scmsrht.urls import get_clone_urls
 from mansrht.access import UserAccess, check_access
 from mansrht.repo import GitsrhtBackend
 from mansrht.types import User, Wiki, RootWiki
@@ -38,12 +37,17 @@ metrics = type("metrics", tuple(), {
 def content(wiki, path, is_root=False, **kwargs):
     link_prefix = kwargs.get('link_prefix')
     backend = GitsrhtBackend(wiki.owner)
-    clone_urls = get_clone_urls(
-            backend.origin, wiki.owner, wiki.repo, backend.ssh_format)
-    web_url=f"{backend.origin}/{wiki.owner.canonical_name}/{wiki.repo.name}"
+
+    ssh_host = urlparse(backend.origin_ext).hostname
+    clone_urls = {
+            "https": f"{backend.origin}/{wiki.owner}/{wiki.repo.name}",
+            "ssh": f"{backend.ssh_user}@{ssh_host}:{wiki.owner}/{wiki.repo.name}",
+    }
+
+    web_url = f"{backend.origin}/{wiki.owner.canonical_name}/{wiki.repo.name}"
     if not wiki.repo.commit_sha:
         return render_template("new-wiki.html", wiki=wiki,
-                clone_url=clone_urls[1], repo=wiki.repo, web_url=web_url)
+                clone_urls=clone_urls, repo=wiki.repo, web_url=web_url)
 
     if not path:
         path = ""

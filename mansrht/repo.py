@@ -6,7 +6,7 @@ from srht.oauth import current_user
 import os
 
 origin = get_origin("man.sr.ht")
-git_user = cfg("git.sr.ht::dispatch", "/usr/bin/gitsrht-keys", "git:git").split(":")[0]
+git_user = cfg("git.sr.ht", "ssh-user", "git")
 
 class GitsrhtBackend():
     """
@@ -30,8 +30,8 @@ class GitsrhtBackend():
         return self._origin_ext
 
     @property
-    def ssh_format(self):
-        return git_user + "@{origin}:{user}/{repo}"
+    def ssh_user(self):
+        return git_user
 
     def get_repos(self, cursor=None):
         r = exec_gql("git.sr.ht", """

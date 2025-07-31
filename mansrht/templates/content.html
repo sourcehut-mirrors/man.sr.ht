@@ -104,15 +104,10 @@ Date:   {{ repo.commit_time }}
       <dl>
         <dt><strong>Clone this wiki</strong>{{" (\"" ~ repo.ref ~ "\" branch)"}}</dt>
         <dd>
-        {% for url in clone_urls|map(attribute="url") %}
-          {% if "://" in url %}
-          <a href={{ url }}>{{ url }}</a>
+          <a href={{ clone_urls.https }}>{{ clone_urls.https }}</a>
           <span class="text-muted pull-right">(read-only)</span><br />
-          {% else %}
-          {{url}}
+          {{clone_urls.ssh}}
           <span class="text-muted pull-right">(read/write)</span><br />
-          {% endif %}
-        {% endfor %}
         </dd>
       </dl>
     </div>
