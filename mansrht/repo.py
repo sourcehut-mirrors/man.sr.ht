@@ -144,6 +144,7 @@ class GitsrhtBackend():
         if not path:
             return { "object": { "type": "TREE" } } # root
 
+        path = path.rstrip("/")
         r = exec_gql("git.sr.ht", """
         query GetTree($name: String!, $ref: String!, $path: String!) {
             me {

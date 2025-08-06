@@ -35,7 +35,6 @@ metrics = type("metrics", tuple(), {
 })
 
 def content(wiki, path, is_root=False, **kwargs):
-    link_prefix = kwargs.get('link_prefix')
     backend = GitsrhtBackend(wiki.owner)
 
     ssh_host = urlparse(backend.origin_ext).hostname
@@ -54,6 +53,9 @@ def content(wiki, path, is_root=False, **kwargs):
 
     n = 0
     item = backend.get_tree_entry(wiki.repo.name, wiki.repo.ref, path=path)
+    if item and item["object"]["type"] == "TREE" and not path.endswith("/"):
+        return redirect(request.path + "/")
+
     while item and item["object"]["type"] == "TREE" and n < 5:
         item = backend.get_tree_entry(wiki.repo.name, wiki.repo.ref,
             path=os.path.join(path, "index.md"))
@@ -70,7 +72,7 @@ def content(wiki, path, is_root=False, **kwargs):
     blob_id = item["object"]["id"]
     blob_name = item["name"]
     cachekey = f"{wiki.repo.name}:{blob_id}"
-    html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v3"
+    html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v4"
     frontmatter_cachekey = f"man.sr.ht:frontmatter:{cachekey}"
     html = get_cache(html_cachekey)
     metrics.mansrht_markdown_cache_access.inc()
@@ -102,20 +104,11 @@ def content(wiki, path, is_root=False, **kwargs):
             if blob_name.endswith(".html"):
                 html = Markup(md)
             elif blob_name.endswith(".md"):
-                html = markdown(
-                    md,
-                    baselevel=3,
-                    link_prefix=link_prefix,
-                    sanitize_output=False,
-                )
+                html = markdown(md, baselevel=3, sanitize_output=False)
             else:
                 abort(404)
         elif blob_name.endswith(".md"):
-            html = markdown(
-                md,
-                baselevel=3,
-                link_prefix=link_prefix,
-            )
+            html = markdown(md, baselevel=3)
         else:
             abort(404)
         if current_user:
@@ -160,8 +153,7 @@ def root_content(path=None):
     wiki = Wiki.query.filter(Wiki.id == root_wiki.id).first()
     if not wiki:
         abort(404)
-    link_prefix = os.path.dirname(url_for("html.root_content", path=path))
-    return content(wiki, path, is_root=True, link_prefix=link_prefix)
+    return content(wiki, path, is_root=True)
 
 # The tilde (~) in the route is necessary in order to differentiate between the
 # root wiki and user wikis.
@@ -175,9 +167,4 @@ def user_content(owner_name, wiki_name, path=None):
     # Redirect to root if it _is_ the root.
     if is_root_wiki(wiki):
         return redirect("/")
-    link_prefix = os.path.dirname(url_for(
-        "html.user_content",
-        owner_name=owner_name,
-        wiki_name=wiki_name,
-    ))
-    return content(wiki, path, link_prefix=link_prefix)
+    return content(wiki, path)
