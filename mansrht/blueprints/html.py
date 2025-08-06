@@ -73,7 +73,7 @@ def content(wiki, path, is_root=False, **kwargs):
     blob_id = item["object"]["id"]
     blob_name = item["name"]
     cachekey = f"{wiki.repo.name}:{blob_id}"
-    html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v4"
+    html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v5"
     frontmatter_cachekey = f"man.sr.ht:frontmatter:{cachekey}"
     html = get_cache(html_cachekey)
     metrics.mansrht_markdown_cache_access.inc()
@@ -93,6 +93,7 @@ def content(wiki, path, is_root=False, **kwargs):
             if end != -1:
                 frontmatter = md[4:end]
                 md = md[end+5:]
+
         if frontmatter:
             try:
                 frontmatter = yaml.safe_load(frontmatter)
@@ -101,21 +102,24 @@ def content(wiki, path, is_root=False, **kwargs):
             except:
                 md = "<!-- Error parsing YAML frontmatter -->\n\n" + md
                 frontmatter = dict()
+
         if is_root:
             if blob_name.endswith(".html"):
                 html = Markup(md)
             elif blob_name.endswith(".md"):
-                html = markdown(md, baselevel=3, sanitize_output=False)
+                html = markdown(md, baselevel=2, sanitize_output=False)
             else:
                 abort(404)
         elif blob_name.endswith(".md"):
-            html = markdown(md, baselevel=3)
+            html = markdown(md, baselevel=2)
         else:
             abort(404)
+
         if current_user:
             html = html.replace("{{{srht_username}}}", current_user.username)
         else:
             html = html.replace("{{{srht_username}}}", "USERNAME")
+
         set_cache(html_cachekey, timedelta(days=7), html)
         set_cache(frontmatter_cachekey,
                 timedelta(days=7), json.dumps(frontmatter, default=date_handler))
@@ -123,10 +127,12 @@ def content(wiki, path, is_root=False, **kwargs):
         html = Markup(html.decode())
         frontmatter = get_cache(frontmatter_cachekey)
         frontmatter = json.loads(frontmatter.decode())
+
     title = path[-1].rstrip(".md") if path else "index"
     toc = extract_toc(html)
     if "title" in frontmatter:
         title = frontmatter["title"]
+
     soup = BeautifulSoup(html, "html.parser")
     firstpara = ""
     if frontmatter.get("toc", True) and len(toc) != 0:
@@ -134,6 +140,7 @@ def content(wiki, path, is_root=False, **kwargs):
             firstpara = soup.find("p")
             if firstpara:
                 firstpara = firstpara.extract()
+
     return render_template("content.html",
             content=Markup(soup), firstpara=Markup(firstpara),
             title=title, repo=wiki.repo, toc=toc, wiki=wiki, is_root=is_root,
