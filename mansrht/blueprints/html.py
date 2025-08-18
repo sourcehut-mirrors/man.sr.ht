@@ -73,7 +73,7 @@ def content(wiki, path, is_root=False, **kwargs):
     blob_id = item["object"]["id"]
     blob_name = item["name"]
     cachekey = f"{wiki.repo.name}:{blob_id}"
-    html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v5"
+    html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v6"
     frontmatter_cachekey = f"man.sr.ht:frontmatter:{cachekey}"
     html = get_cache(html_cachekey)
     metrics.mansrht_markdown_cache_access.inc()
@@ -87,20 +87,19 @@ def content(wiki, path, is_root=False, **kwargs):
         frontmatter = dict()
         if md.startswith("---\n"):
             try:
-                end = md.index("---\n\n", 1)
+                end = md.index("---\n", 1)
             except ValueError:
-                end = -1 # this is dumb, Guido
+                end = -1
             if end != -1:
                 frontmatter = md[4:end]
-                md = md[end+5:]
+                md = md[end+4:]
 
-        if frontmatter:
             try:
-                frontmatter = yaml.safe_load(frontmatter)
+                frontmatter = next(yaml.safe_load_all(frontmatter))
                 if not isinstance(frontmatter, dict):
-                    raise Exception()
-            except:
-                md = "<!-- Error parsing YAML frontmatter -->\n\n" + md
+                    raise Exception("Expected frontmatter to be a dictionary")
+            except Exception as ex:
+                md = "**Warning:** Error parsing YAML frontmatter\n\n" + md
                 frontmatter = dict()
 
         if is_root:
