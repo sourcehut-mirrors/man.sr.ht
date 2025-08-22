@@ -84,14 +84,13 @@ def content(wiki, path, is_root=False, **kwargs):
         metrics.mansrht_markdown_cache_miss.inc()
         if not "text" in item["object"]:
             mimetype, enc = mimetypes.guess_type(path[-1] if path else "")
-            if not mimetype.startswith('image/'):
+            if mimetype and mimetype.startswith('image/'):
+                url = item["object"]["content"]
+                auth = encrypt_request_authorization(user=current_user)
+                resp = requests.get(url, headers=auth, stream=True)
+                return send_file(resp.raw, mimetype=mimetype)
+            else:
                 abort(404)
-            url = item["object"]["content"]
-            auth = encrypt_request_authorization(user=current_user)
-            resp = requests.get(url, headers=auth, stream=True)
-            return send_file(resp.raw,
-                mimetype=mimetype,
-                as_attachment=False)
         md = item["object"]["text"]
 
         frontmatter = dict()
