@@ -56,8 +56,8 @@ def content(wiki, path, is_root=False, **kwargs):
 
     n = 0
     item = backend.get_tree_entry(wiki.repo.name, wiki.repo.ref, path=path)
-    if item and item["object"]["type"] == "TREE" and not path.endswith("/"):
-        if path and path != "/":
+    if item and item["object"]["type"] == "TREE" and not request.path.endswith("/"):
+        if not is_root or path != "":
             return redirect(request.path + "/")
 
     while item and item["object"]["type"] == "TREE" and n < 5:
