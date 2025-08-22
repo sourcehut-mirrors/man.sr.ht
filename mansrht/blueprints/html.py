@@ -7,6 +7,7 @@ from srht.flask import session, date_handler
 from srht.markdown import SRHT_MARKDOWN_VERSION, markdown, extract_toc
 from srht.oauth import UserType, current_user
 from srht.cache import set_cache, get_cache
+from srht.crypto import encrypt_request_authorization
 from srht.validation import Validation
 from mansrht.access import UserAccess, check_access
 from mansrht.repo import GitsrhtBackend
@@ -17,7 +18,9 @@ from datetime import timedelta
 from markupsafe import Markup
 from urllib.parse import urlparse, urlunparse
 import json
+import mimetypes
 import os
+import requests
 import yaml
 
 html = Blueprint('html', __name__)
@@ -80,8 +83,15 @@ def content(wiki, path, is_root=False, **kwargs):
     if not html:
         metrics.mansrht_markdown_cache_miss.inc()
         if not "text" in item["object"]:
-            # TODO: Return raw blobs?
-            abort(404)
+            mimetype, enc = mimetypes.guess_type(path[-1] if path else "")
+            if not mimetype.startswith('image/'):
+                abort(404)
+            url = item["object"]["content"]
+            auth = encrypt_request_authorization(user=current_user)
+            resp = requests.get(url, headers=auth, stream=True)
+            return send_file(resp.raw,
+                mimetype=mimetype,
+                as_attachment=False)
         md = item["object"]["text"]
 
         frontmatter = dict()

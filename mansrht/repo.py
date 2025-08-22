@@ -155,6 +155,9 @@ class GitsrhtBackend():
                             id
                             type
 
+                            ... on Blob {
+                                content
+                            }
                             ... on TextBlob {
                                 text
                             }
