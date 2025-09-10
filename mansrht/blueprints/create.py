@@ -4,7 +4,7 @@ from srht.flask import session
 from srht.oauth import current_user, loginrequired
 from srht.validation import Validation
 from mansrht.repo import GitsrhtBackend
-from mansrht.types import Wiki, WikiVisibility
+from mansrht.types import Wiki, Visibility
 from mansrht.wikis import validate_name, create_repo, create_wiki
 from collections import namedtuple
 import os
@@ -64,8 +64,8 @@ def create_POST():
     if not valid.ok:
         return render_template("create.html", **valid.kwargs)
     visibility = valid.optional("visibility",
-            default="public",
-            cls=WikiVisibility)
+            default="PUBLIC",
+            cls=Visibility)
     session["wiki_name"] = wiki_name
     session["wiki_visibility"] = visibility.name
     return redirect("/wiki/create/repo")
@@ -74,7 +74,7 @@ def create_POST():
 @loginrequired
 def select_repo_GET():
     wiki_name = session.get("wiki_name")
-    wiki_visibility = session.get("wiki_visibility")
+    wiki_visibility = Visibility(session.get("wiki_visibility"))
     if not wiki_name:
         return redirect("/wiki/create")
     backend = GitsrhtBackend(current_user)
@@ -87,11 +87,11 @@ def select_repo_POST():
     valid = Validation(request)
     repo_name = valid.require("repo", friendly_name="Repo")
     # will not be set (and does not matter) if existing repo selected
-    repo_visibility = valid.optional("visibility", default="public")
+    repo_visibility = valid.optional("visibility", default="PUBLIC")
     if not valid.ok:
         backend = GitsrhtBackend(current_user)
         wiki_name = session.get("wiki_name")
-        visibility = session.get("wiki_visibility")
+        visibility = Visibility(session.get("wiki_visibility"))
         return select_repo(backend, wiki_name, visibility, **valid.kwargs)
 
     # The repo name is checked at the end of the form.
@@ -124,7 +124,7 @@ def select_ref_POST():
         return redirect("/wiki/create")
 
     is_root = session.get("configure_root", False)
-    visibility = WikiVisibility(session.get("wiki_visibility", "public"))
+    visibility = Visibility(session.get("wiki_visibility", "PUBLIC"))
     repo_name, repo_visibility, new_repo = wiki_repo
     backend = GitsrhtBackend(current_user)
 

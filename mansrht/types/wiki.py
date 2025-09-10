@@ -1,12 +1,12 @@
 import sqlalchemy as sa
-import sqlalchemy_utils as sau
-from srht.database import Base
 from enum import Enum
+from sqlalchemy.dialects import postgresql
+from srht.database import Base
 
-class WikiVisibility(Enum):
-    public = 'public'
-    private = 'private'
-    unlisted = 'unlisted'
+class Visibility(Enum):
+    PUBLIC = 'PUBLIC'
+    PRIVATE = 'PRIVATE'
+    UNLISTED = 'UNLISTED'
 
 class Wiki(Base):
     __tablename__ = 'wiki'
@@ -22,9 +22,8 @@ class Wiki(Base):
             nullable=False)
     repo = sa.orm.relationship('BackingRepo', backref=sa.orm.backref('wikis'))
     visibility = sa.Column(
-            sau.ChoiceType(WikiVisibility, impl=sa.String()),
-            nullable=False,
-            default=WikiVisibility.public)
+            postgresql.ENUM(Visibility, name='visibility'),
+            nullable=False)
 
 class RootWiki(Base):
     __tablename__ = 'root_wiki'

@@ -37,13 +37,19 @@ CREATE TABLE backing_repo (
 	resource_id integer
 );
 
+CREATE TYPE visibility AS ENUM (
+	'PUBLIC',
+	'PRIVATE',
+	'UNLISTED'
+);
+
 CREATE TABLE wiki (
 	id serial PRIMARY KEY,
 	created timestamp without time zone NOT NULL,
 	updated timestamp without time zone NOT NULL,
 	name character varying(256) NOT NULL,
 	owner_id integer NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-	visibility character varying NOT NULL,
+	visibility visibility NOT NULL,
 	repo_id integer NOT NULL REFERENCES backing_repo(id)
 );
 

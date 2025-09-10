@@ -68,7 +68,7 @@
             <a href="/~{{user.username}}/{{wiki.name}}">
               ~{{user.username}}/{{wiki.name}}
             </a>
-            {% if wiki.visibility.value != 'public' %}
+            {% if wiki.visibility != Visibility.PUBLIC %}
             <small class="pull-right">
               {{ wiki.visibility.value }}
             </small>

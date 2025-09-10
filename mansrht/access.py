@@ -1,7 +1,7 @@
 from flask import abort, request
 from datetime import datetime
 from enum import IntFlag
-from mansrht.types import User, Wiki, WikiVisibility
+from mansrht.types import User, Wiki, Visibility
 from srht.database import db
 from srht.graphql import exec_gql
 from srht.oauth import current_user
@@ -58,13 +58,13 @@ def get_access(wiki, owner, user=None):
     if not wiki:
         return UserAccess.none
     if not user:
-        if wiki.visibility == WikiVisibility.public or \
-                wiki.visibility == WikiVisibility.unlisted:
+        if wiki.visibility == Visibility.PUBLIC or \
+                wiki.visibility == Visibility.UNLISTED:
             return UserAccess.read
         return UserAccess.none
     if wiki.owner_id == user.id:
         return UserAccess.read | UserAccess.write | UserAccess.manage
-    if wiki.visibility == WikiVisibility.private:
+    if wiki.visibility == Visibility.PRIVATE:
         return get_repo_access(wiki, owner, user)
     return UserAccess.read
 

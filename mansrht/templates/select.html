@@ -33,11 +33,11 @@
                 class="form-check-label"
                 title="Publically visible and listed on your profile"
               >
-                <input {{ "checked" if default_visibility == "public" }}
+                <input {{ "checked" if default_visibility == Visibility.PUBLIC }}
                   class="form-check-input"
                   type="radio"
                   name="visibility"
-                  value="public"> Public
+                  value="PUBLIC"> Public
               </label>
             </div>
             <div class="form-check form-check-inline">
@@ -45,11 +45,11 @@
                   class="form-check-label"
                   title="Visible to anyone with the link, but not shown on your profile"
               >
-                <input {{ "checked" if default_visibility.lower() == "unlisted" }}
+                <input {{ "checked" if default_visibility == Visibility.UNLISTED }}
                   class="form-check-input"
                   type="radio"
                   name="visibility"
-                  value="unlisted"> Unlisted
+                  value="UNLISTED"> Unlisted
               </label>
             </div>
             <div class="form-check form-check-inline">
@@ -57,11 +57,11 @@
                 class="form-check-label"
                 title="Only visible to you and your collaborators"
               >
-                <input {{ "checked" if default_visibility.lower() == "private" }}
+                <input {{ "checked" if default_visibility == Visibility.PRIVATE }}
                   class="form-check-input"
                   type="radio"
                   name="visibility"
-                  value="private"> Private
+                  value="PRIVATE"> Private
               </label>
             </div>
           </fieldset>

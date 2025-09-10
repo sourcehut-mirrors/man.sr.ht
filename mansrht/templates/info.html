@@ -24,8 +24,8 @@
               class="form-check-input"
               type="radio"
               name="visibility"
-              value="public"
-              {{ "checked" if wiki.visibility.value == "public" else "" }}
+              value="PUBLIC"
+              {{ "checked" if wiki.visibility == Visibility.PUBLIC else "" }}
             > Public
           </label>
         </div>
@@ -38,8 +38,8 @@
               class="form-check-input"
               type="radio"
               name="visibility"
-              value="unlisted"
-              {{ "checked" if wiki.visibility.value == "unlisted" else "" }}
+              value="UNLISTED"
+              {{ "checked" if wiki.visibility == Visibility.UNLISTED else "" }}
             > Unlisted
           </label>
         </div>
@@ -52,8 +52,8 @@
               class="form-check-input"
               type="radio"
               name="visibility"
-              value="private"
-              {{ "checked" if wiki.visibility.value == "private" else "" }}
+              value="PRIVATE"
+              {{ "checked" if wiki.visibility == Visibility.PRIVATE else "" }}
             > Private
           </label>
         </div>

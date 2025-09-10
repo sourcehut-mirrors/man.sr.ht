@@ -4,7 +4,7 @@ from srht.oauth import loginrequired
 from srht.validation import Validation
 from mansrht.access import UserAccess, check_access
 from mansrht.repo import GitsrhtBackend
-from mansrht.types import WikiVisibility
+from mansrht.types import Visibility
 from mansrht.wikis import delete_wiki, is_root_wiki
 
 manage = Blueprint('manage', __name__)
@@ -25,8 +25,7 @@ def info_POST(owner_name, wiki_name):
     owner, wiki = check_access(owner_name, wiki_name, UserAccess.manage)
     valid = Validation(request)
     visibility = valid.optional("visibility",
-            cls=WikiVisibility,
-            default=wiki.visibility)
+            cls=Visibility, default=wiki.visibility)
     wiki.visibility = visibility
     db.session.commit()
     return redirect(url_for(

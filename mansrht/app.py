@@ -1,4 +1,4 @@
-from mansrht.types import User
+from mansrht.types import User, Visibility
 from srht.config import cfg
 from srht.database import DbSession
 from srht.flask import SrhtFlask
@@ -24,5 +24,11 @@ class ManApp(SrhtFlask):
         self.register_blueprint(public)
 
         self.url_map.strict_slashes = False
+
+        @self.context_processor
+        def inject():
+            return {
+                "Visibility": Visibility,
+            }
 
 app = ManApp()

@@ -2,10 +2,9 @@ from flask import Blueprint, render_template, abort, request
 from srht.flask import paginate_query
 from srht.search import search_by
 from srht.oauth import current_user
-from mansrht.types import User, Wiki, WikiVisibility
+from mansrht.types import User, Wiki, Visibility
 
 public = Blueprint('public', __name__)
-
 
 @public.route("/~<username>")
 @public.route("/~<username>/")
@@ -16,9 +15,9 @@ def user_index(username):
     terms = request.args.get("search")
     wikis = Wiki.query.filter(Wiki.owner_id == user.id)
     if current_user and current_user.id != user.id:
-        wikis = wikis.filter(Wiki.visibility == WikiVisibility.public)
+        wikis = wikis.filter(Wiki.visibility == Visibility.PUBLIC)
     elif not current_user:
-        wikis = wikis.filter(Wiki.visibility == WikiVisibility.public)
+        wikis = wikis.filter(Wiki.visibility == Visibility.PUBLIC)
 
     search_error = None
     try:
