@@ -22,15 +22,11 @@ repository = "https://git.sr.ht/~sircmpwn/man.sr.ht"
 include-package-data = false
 packages = [
     "mansrht",
-    "mansrht.alembic",
-    "mansrht.alembic.versions",
     "mansrht.blueprints",
     "mansrht.templates",
     "mansrht.types",
 ]
-script-files = [
-    "man.sr.ht-migrate",
-]
+
 [tool.setuptools.package-data]
 "mansrht" = ['default_query.graphql', 'schema.graphqls']
 "mansrht.templates" = ['*.html']
