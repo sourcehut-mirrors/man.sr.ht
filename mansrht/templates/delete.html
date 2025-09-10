@@ -17,14 +17,15 @@
           owner_name=owner.username, wiki_name=wiki.name) }}"
       >Nevermind</a>
       <label class="form-check-label" style="margin-left: 2rem">
+        {% set repo_url = backend.get_repo_url(wiki.repo_name) %}
         <input
           class="form-check-input"
           type="checkbox"
           name="delete_repo"
-          style="position: relative; top: 2px;"
-          {% if delete_repo %}
-          checked
-          {% endif %}> Delete corresponding repo?
+          style="position: relative; top: 2px;">
+          Delete corresponding
+          "<a href="{{repo_url}}">{{wiki.repo_name}}</a>"
+          git repo?
       </label>
     </form>
 {% endblock %}

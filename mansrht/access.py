@@ -30,7 +30,6 @@ def get_repo_access(wiki, owner, user=None):
     if not user:
         user = current_user
     valid = Validation(request)
-    repo = wiki.repo
     resp = exec_gql("git.sr.ht", """
     query RepoAccess($repo: String!, $username: String!) {
         user(username: $username) {
@@ -40,7 +39,7 @@ def get_repo_access(wiki, owner, user=None):
         }
     }
     """, valid=valid, user=user,
-        username=owner.username, repo=repo.name)
+        username=owner.username, repo=wiki.repo_name)
     if not valid.ok:
         return UserAccess.none
     try:

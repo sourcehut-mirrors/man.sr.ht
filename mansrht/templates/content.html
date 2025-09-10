@@ -24,13 +24,13 @@
       <li class="nav-item">
         <a
           class="nav-link"
-          href="{{web_url}}/tree/{{repo.ref}}/{{'/'.join(path)}}?view-source"
+          href="{{web_url}}/tree/{{wiki.repo_ref}}/{{'/'.join(path)}}?view-source"
         >source</a>
       </li>
       <li class="nav-item">
         <a
           class="nav-link"
-          href="{{web_url}}/log/{{repo.ref}}"
+          href="{{web_url}}/log/{{wiki.repo_ref}}"
         >history</a>
       </li>
     </ul>
@@ -95,14 +95,14 @@
   <div class="row">
     <div class="col-md-8">
       <pre>commit <a
-href="{{web_url}}/commit/{{repo.commit_sha}}"
->{{ repo.commit_sha }}</a>
-Author: {{ repo.commit_author }} &lt;{{ repo.commit_email }}&gt;
-Date:   {{ repo.commit_time }}
+href="{{web_url}}/commit/{{commit.id}}"
+>{{ commit.id }}</a>
+Author: {{ commit.author.name }} &lt;{{ commit.author.email }}&gt;
+Date:   {{ commit.author.time }}
 
-{{ repo.commit_message.rstrip("\n") }}</pre>
+{{ commit.message.rstrip("\n") }}</pre>
       <dl>
-        <dt><strong>Clone this wiki</strong>{{" (\"" ~ repo.ref ~ "\" branch)"}}</dt>
+        <dt><strong>Clone this wiki</strong>{{" (\"" ~ wiki.repo_ref ~ "\" branch)"}}</dt>
         <dd>
           <a href={{ clone_urls.https }}>{{ clone_urls.https }}</a>
           <span class="text-muted pull-right">(read-only)</span><br />

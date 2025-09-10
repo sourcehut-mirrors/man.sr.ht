@@ -28,19 +28,16 @@ def info_POST(owner_name, wiki_name):
             cls=Visibility, default=wiki.visibility)
     wiki.visibility = visibility
     db.session.commit()
-    return redirect(url_for(
-        "manage.info", owner_name=owner_name, wiki_name=wiki_name))
+    return redirect(url_for("manage.info",
+        owner_name=owner_name, wiki_name=wiki_name))
 
 @manage.route("/manage/<owner_name>/<wiki_name>/delete")
 @loginrequired
 def delete(owner_name, wiki_name):
     # check_access() guarantees owner and wiki are valid.
     owner, wiki = check_access(owner_name, wiki_name, UserAccess.manage)
-    return render_template(
-            "delete.html", owner=owner, wiki=wiki,
-            # Fill default value for "delete repo" option based-on if the
-            # wiki was created with a new repo in the first place.
-            delete_repo=wiki.repo.new)
+    backend = GitsrhtBackend(owner)
+    return render_template("delete.html", owner=owner, wiki=wiki, backend=backend)
 
 @manage.route("/manage/<owner_name>/<wiki_name>/delete", methods=["POST"])
 @loginrequired
@@ -50,10 +47,5 @@ def delete_POST(owner_name, wiki_name):
 
     # check_access() guarantees owner and wiki are valid.
     owner, wiki = check_access(owner_name, wiki_name, UserAccess.manage)
-    backend = GitsrhtBackend(owner)
-    try:
-        backend.unensure_repo_postupdate(wiki.repo)
-    except:
-        pass # Deleted, presumably
     delete_wiki(wiki, owner, delete_repo == "on")
     return redirect("/")

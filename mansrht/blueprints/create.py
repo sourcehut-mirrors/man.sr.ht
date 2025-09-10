@@ -5,7 +5,7 @@ from srht.oauth import current_user, loginrequired
 from srht.validation import Validation
 from mansrht.repo import GitsrhtBackend
 from mansrht.types import Wiki, Visibility
-from mansrht.wikis import validate_name, create_repo, create_wiki
+from mansrht.wikis import validate_name
 from collections import namedtuple
 import os
 
@@ -21,9 +21,8 @@ def select_repo(backend, wiki_name, wiki_visibility, **kwargs):
     ]
 
     existing = [
-        wiki.repo.name
+        wiki.repo_name
         for wiki in Wiki.query.filter(Wiki.owner_id == current_user.id).all()
-        if wiki.repo
     ]
 
     # TODO: Add cancel button.
@@ -146,27 +145,21 @@ def select_ref_POST():
             return select_repo(backend, wiki_name, visibility.value, **valid.kwargs)
         backend_repo = backend.create_repo(repo_name, repo_visibility)
 
-    # Try to find the latest commit if we're using an existing repo + ref.
-    new_ref = request.path.endswith("new")
-    commit = None
-    if not new_repo and not new_ref:
-        commit = backend.get_latest_commit(repo_name, ref_name)
-        valid.expect(
-                commit is not None,
-                "Ref was not found.",
-                field="ref")
-    if not valid.ok:
-        return select_ref(backend, wiki_name, repo_name,
-                repo_visibility, new_repo, **valid.kwargs)
-
     backend.ensure_repo_update()
 
-    repo = create_repo(
-            new_repo, backend_repo["name"], backend_repo["id"], ref_name,
-            current_user, commit=commit)
-    create_wiki(
-            valid, current_user, wiki_name,
-            repo, visibility, is_root=is_root)
+    wiki = Wiki()
+    wiki.name = wiki_name
+    wiki.owner_id = current_user.id
+    wiki.visibility = visibility
+    wiki.repo_name = backend_repo["name"]
+    wiki.repo_ref = ref_name
+    db.session.add(wiki)
+
+    if is_root:
+        root_wiki = RootWiki(id=wiki.id)
+        db.session.add(root_wiki)
+
+    db.session.commit()
 
     del session["wiki_name"]
     del session["wiki_repo"]

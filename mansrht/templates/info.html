@@ -4,7 +4,7 @@
   {% if is_root %}
     <p>
     Visit
-    {% set repo_url = backend.get_repo_url(wiki.repo.name) %}
+    {% set repo_url = backend.get_repo_url(wiki.repo_name) %}
     <a
       href="{{ repo_url }}/settings/info"
       target="_blank"
@@ -61,7 +61,7 @@
       <p>
       Visiblity of the backing repo is controlled separately. To manage settings
       for your backing repo, visit
-      {% set repo_url = backend.get_repo_url(wiki.repo.name) %}
+      {% set repo_url = backend.get_repo_url(wiki.repo_name) %}
       <a
         href="{{ repo_url }}/settings/info"
         target="_blank"

@@ -8,6 +8,9 @@ import os
 origin = get_origin("man.sr.ht")
 git_user = cfg("git.sr.ht", "ssh-user", "git")
 
+class MissingRepositoryError(Exception):
+    pass
+
 class GitsrhtBackend():
     """
     git.sr.ht-based backend for man.sr.ht.
@@ -112,44 +115,44 @@ class GitsrhtBackend():
         return os.path.join(self.origin_ext,
                 self.owner.canonical_name, repo_name, ref)
 
-    def get_latest_commit(self, repo_name, ref):
-        r = exec_gql("git.sr.ht", """
-        query GetLatestCommit($name: String!, $ref: String!) {
-            me {
-                repository(name: $name) {
-                    log(from: $ref) {
-                        results {
-                            id
-                            author {
-                                name
-                                email
-                                time
-                            }
-                            message
-                            tree {
-                                id
+    def get_tree_entry(self, repo_name, branch, path=None):
+        # Root path is a special case
+        if not path:
+            r = exec_gql("git.sr.ht", """
+            query GetLatestCommit($name: String!, $ref: String!) {
+                me {
+                    repository(name: $name) {
+                        reference(name: $ref) {
+                            follow {
+                                ... on Commit {
+                                    id
+                                    message
+                                    author {
+                                        name
+                                        email
+                                        time
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        """, name=repo_name, ref=ref)
-        log = r["me"]["repository"]["log"]["results"]
-        if len(log) == 0:
-            return None
-        return log[0]
-
-    def get_tree_entry(self, repo_name, ref, path=None):
-        if not path:
-            return { "object": { "type": "TREE" } } # root
+            """, name=repo_name, ref=f"refs/heads/{branch}", user=self.owner)
+            commit = None
+            repo = r["me"]["repository"]
+            if not repo:
+                raise MissingRepositoryError()
+            if repo["reference"]:
+                commit = r["me"]["repository"]["reference"]["follow"]
+            return { "object": { "type": "TREE" } }, commit # root
 
         path = path.rstrip("/")
         r = exec_gql("git.sr.ht", """
-        query GetTree($name: String!, $ref: String!, $path: String!) {
+        query GetTree($name: String!, $ref: String!, $branch: String!, $path: String!) {
             me {
                 repository(name: $name) {
-                    path(revspec: $ref, path: $path) {
+                    path(revspec: $branch, path: $path) {
                         name
                         object {
                             id
@@ -163,11 +166,35 @@ class GitsrhtBackend():
                             }
                         }
                     }
+
+                    reference(name: $ref) {
+                        follow {
+                            ... on Commit {
+                                id
+                                message
+                                author {
+                                    name
+                                    email
+                                    time
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
-        """, name=repo_name, ref=ref, path=path, user=self.owner)
-        return r["me"]["repository"]["path"]
+        """,
+                 name=repo_name, branch=branch, ref=f"refs/heads/{branch}",
+                 path=path, user=self.owner)
+
+        repo = r["me"]["repository"]
+        if not repo:
+            raise MissingRepositoryError()
+        path = repo["path"]
+        commit = None
+        if repo["reference"]:
+            commit = repo["reference"]["follow"]
+        return path, commit
 
     # TODO: Drop webhooks
     def ensure_repo_postupdate(self, repo):

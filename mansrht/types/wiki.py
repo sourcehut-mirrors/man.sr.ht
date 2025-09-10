@@ -16,14 +16,11 @@ class Wiki(Base):
     name = sa.Column(sa.Unicode(256), nullable=False)
     owner_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'), nullable=False)
     owner = sa.orm.relationship('User', backref=sa.orm.backref('wikis'))
-    repo_id = sa.Column(
-            sa.Integer,
-            sa.ForeignKey('backing_repo.id'),
-            nullable=False)
-    repo = sa.orm.relationship('BackingRepo', backref=sa.orm.backref('wikis'))
     visibility = sa.Column(
             postgresql.ENUM(Visibility, name='visibility'),
             nullable=False)
+    repo_name = sa.Column(sa.Unicode, nullable=False)
+    repo_ref = sa.Column(sa.Unicode, nullable=False)
 
 class RootWiki(Base):
     __tablename__ = 'root_wiki'

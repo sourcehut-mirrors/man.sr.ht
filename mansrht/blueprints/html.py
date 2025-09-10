@@ -10,7 +10,7 @@ from srht.cache import set_cache, get_cache
 from srht.crypto import encrypt_request_authorization
 from srht.validation import Validation
 from mansrht.access import UserAccess, check_access
-from mansrht.repo import GitsrhtBackend
+from mansrht.repo import GitsrhtBackend, MissingRepositoryError
 from mansrht.types import User, Wiki, RootWiki
 from mansrht.wikis import is_root_wiki
 from prometheus_client import Counter
@@ -42,29 +42,37 @@ def content(wiki, path, is_root=False, **kwargs):
 
     ssh_host = urlparse(backend.origin_ext).hostname
     clone_urls = {
-            "https": f"{backend.origin}/{wiki.owner}/{wiki.repo.name}",
-            "ssh": f"{backend.ssh_user}@{ssh_host}:{wiki.owner}/{wiki.repo.name}",
+            "https": f"{backend.origin}/{wiki.owner}/{wiki.repo_name}",
+            "ssh": f"{backend.ssh_user}@{ssh_host}:{wiki.owner}/{wiki.repo_name}",
     }
 
-    web_url = f"{backend.origin}/{wiki.owner.canonical_name}/{wiki.repo.name}"
-    if not wiki.repo.commit_sha:
-        return render_template("new-wiki.html", wiki=wiki,
-                clone_urls=clone_urls, repo=wiki.repo, web_url=web_url)
+    web_url = f"{backend.origin}/{wiki.owner.canonical_name}/{wiki.repo_name}"
 
     if not path:
         path = ""
 
     n = 0
-    item = backend.get_tree_entry(wiki.repo.name, wiki.repo.ref, path=path)
+    try:
+        item, commit = backend.get_tree_entry(wiki.repo_name, wiki.repo_ref, path=path)
+    except MissingRepositoryError:
+        if current_user == wiki.owner:
+            return render_template("missing-repo.html",
+                wiki=wiki, backend=backend)
+        abort(404)
+
+    if not commit:
+        return render_template("new-wiki.html",
+            wiki=wiki, clone_urls=clone_urls, web_url=web_url)
+
     if item and item["object"]["type"] == "TREE" and not request.path.endswith("/"):
         if not is_root or path != "":
             return redirect(request.path + "/")
 
     while item and item["object"]["type"] == "TREE" and n < 5:
-        item = backend.get_tree_entry(wiki.repo.name, wiki.repo.ref,
+        item, commit = backend.get_tree_entry(wiki.repo_name, wiki.repo_ref,
             path=os.path.join(path, "index.md"))
         if not item and is_root:
-            item = backend.get_tree_entry(wiki.repo.name, wiki.repo.ref,
+            item, commit = backend.get_tree_entry(wiki.repo_name, wiki.repo_ref,
                 path=os.path.join(path, "index.html"))
         n += 1
     if not item or item["object"]["type"] != "BLOB":
@@ -75,7 +83,7 @@ def content(wiki, path, is_root=False, **kwargs):
 
     blob_id = item["object"]["id"]
     blob_name = item["name"]
-    cachekey = f"{wiki.repo.name}:{blob_id}"
+    cachekey = f"{wiki.repo_name}:{blob_id}"
     html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v6"
     frontmatter_cachekey = f"man.sr.ht:frontmatter:{cachekey}"
     html = get_cache(html_cachekey)
@@ -151,9 +159,9 @@ def content(wiki, path, is_root=False, **kwargs):
 
     return render_template("content.html",
             content=Markup(soup), firstpara=Markup(firstpara),
-            title=title, repo=wiki.repo, toc=toc, wiki=wiki, is_root=is_root,
+            title=title, toc=toc, wiki=wiki, is_root=is_root,
             path=path, frontmatter=frontmatter, clone_urls=clone_urls,
-            web_url=web_url, **kwargs)
+            web_url=web_url, commit=commit, **kwargs)
 
 @html.route("/")
 @html.route("/<path:path>")

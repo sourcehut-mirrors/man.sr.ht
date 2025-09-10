@@ -6,22 +6,23 @@
       <h1>index</h1>
       <p>
         Your wiki has been created, but does not have any content. To add
-        content, push commits to the <strong>{{repo.ref}}</strong> branch of
+        content, push commits to the <strong>{{wiki.repo_ref}}</strong> branch
+        of
         <a
           href="{{web_url}}"
-        >{{wiki.owner.canonical_name}}/{{wiki.repo.name}}</a>:
+        >{{wiki.owner.canonical_name}}/{{wiki.repo_name}}</a>:
         <code class="grey">{{clone_urls.ssh}}</code>
       </p>
-      {% if repo.ref != "master" %}
-      <pre>git clone {{clone_urls.ssh}} &amp;&amp; cd {{repo.name}}
-git checkout --orphan {{repo.ref}}
+      {% if wiki.repo_ref != "master" %}
+      <pre>git clone {{clone_urls.ssh}} &amp;&amp; cd {{wiki.repo_name}}
+git checkout --orphan {{wiki.repo_ref}}
 git rm -rf *
 echo "Hello world!" &gt;index.md
 git add index.md
 git commit -m"Initial wiki commit"
-git push -u origin {{repo.ref}}</pre>
+git push -u origin {{wiki.repo_ref}}</pre>
       {% else %}
-      <pre>git clone {{clone_urls.ssh}} &amp;&amp; cd {{repo.name}}
+      <pre>git clone {{clone_urls.ssh}} &amp;&amp; cd {{wiki.repo_name}}
 echo "Hello world!" &gt;index.md
 git add index.md
 git commit -m"Initial wiki commit"

@@ -50,7 +50,10 @@ CREATE TABLE wiki (
 	name character varying(256) NOT NULL,
 	owner_id integer NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
 	visibility visibility NOT NULL,
-	repo_id integer NOT NULL REFERENCES backing_repo(id)
+	-- git.sr.ht repository ID:
+	repo_id integer NOT NULL,
+	-- git repository reference:
+	repo_ref text NOT NULL
 );
 
 CREATE TABLE root_wiki (
