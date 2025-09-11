@@ -145,8 +145,6 @@ def select_ref_POST():
             return select_repo(backend, wiki_name, visibility.value, **valid.kwargs)
         backend_repo = backend.create_repo(repo_name, repo_visibility)
 
-    backend.ensure_repo_update()
-
     wiki = Wiki()
     wiki.name = wiki_name
     wiki.owner_id = current_user.id
