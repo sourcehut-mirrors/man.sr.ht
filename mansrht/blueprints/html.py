@@ -131,11 +131,6 @@ def content(wiki, path, is_root=False, **kwargs):
         else:
             abort(404)
 
-        if current_user:
-            html = html.replace("{{{srht_username}}}", current_user.username)
-        else:
-            html = html.replace("{{{srht_username}}}", "USERNAME")
-
         set_cache(html_cachekey, timedelta(days=7), html)
         set_cache(frontmatter_cachekey,
                 timedelta(days=7), json.dumps(frontmatter, default=date_handler))
