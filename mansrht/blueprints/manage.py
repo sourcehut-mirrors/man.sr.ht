@@ -3,7 +3,6 @@ from srht.database import db
 from srht.oauth import loginrequired
 from srht.validation import Validation
 from mansrht.access import UserAccess, check_access
-from mansrht.repo import GitsrhtBackend
 from mansrht.types import Visibility
 from mansrht.wikis import delete_wiki, is_root_wiki
 
@@ -14,10 +13,7 @@ manage = Blueprint('manage', __name__)
 def info(owner_name, wiki_name):
     owner, wiki = check_access(owner_name, wiki_name, UserAccess.manage)
     is_root = is_root_wiki(wiki)
-    backend = GitsrhtBackend(owner)
-    return render_template(
-            "info.html", owner=owner, wiki=wiki, backend=backend,
-            is_root=is_root)
+    return render_template("info.html", owner=owner, wiki=wiki, is_root=is_root)
 
 @manage.route("/manage/<owner_name>/<wiki_name>/info", methods=["POST"])
 @loginrequired
@@ -36,8 +32,7 @@ def info_POST(owner_name, wiki_name):
 def delete(owner_name, wiki_name):
     # check_access() guarantees owner and wiki are valid.
     owner, wiki = check_access(owner_name, wiki_name, UserAccess.manage)
-    backend = GitsrhtBackend(owner)
-    return render_template("delete.html", owner=owner, wiki=wiki, backend=backend)
+    return render_template("delete.html", owner=owner, wiki=wiki)
 
 @manage.route("/manage/<owner_name>/<wiki_name>/delete", methods=["POST"])
 @loginrequired
@@ -47,5 +42,5 @@ def delete_POST(owner_name, wiki_name):
 
     # check_access() guarantees owner and wiki are valid.
     owner, wiki = check_access(owner_name, wiki_name, UserAccess.manage)
-    delete_wiki(wiki, owner, delete_repo == "on")
+    delete_wiki(wiki, delete_repo == "on")
     return redirect("/")

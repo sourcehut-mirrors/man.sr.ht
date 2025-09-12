@@ -1,9 +1,10 @@
 from flask import abort, request
 from datetime import datetime
 from enum import IntFlag
+from mansrht.git import Client, AccessMode
 from mansrht.types import User, Wiki, Visibility
 from srht.database import db
-from srht.graphql import exec_gql
+from srht.graphql import InternalAuth
 from srht.oauth import current_user
 from srht.validation import Validation
 
@@ -29,22 +30,16 @@ def get_wiki(owner_name, wiki_name):
 def get_repo_access(wiki, owner, user=None):
     if not user:
         user = current_user
-    valid = Validation(request)
-    resp = exec_gql("git.sr.ht", """
-    query RepoAccess($repo: String!, $username: String!) {
-        user(username: $username) {
-            repository(name: $repo) {
-                access
-            }
-        }
-    }
-    """, valid=valid, user=user,
-        username=owner.username, repo=wiki.repo_name)
-    if not valid.ok:
-        return UserAccess.none
+
     try:
-        access = resp["user"]["repository"]["access"]
-        if access == "RW":
+        git_client = Client(InternalAuth(user=user))
+        access = git_client.get_repo_access(
+            owner.username, wiki.repo_name).user.repository.access
+    except:
+        return UserAccess.none
+
+    try:
+        if access == AccessMode.RW:
             return UserAccess.read | UserAccess.write
         else:
             return UserAccess.read

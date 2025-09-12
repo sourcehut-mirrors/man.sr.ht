@@ -12,18 +12,32 @@ MIGRATIONDIR=$(ASSETS)/migrations/$(SERVICE)
 SASSC?=sassc
 SASSC_INCLUDE=-I$(ASSETS)/scss/
 
+ARIADNE_CODEGEN=ariadne-codegen
+
 BINARIES=\
 	$(SERVICE)-api
 
-all: all-bin all-share
+all: all-bin all-share all-python
 
 install: install-bin install-share
 
-clean: clean-bin clean-share
+clean: clean-bin clean-share clean-python
 
 all-bin: $(BINARIES)
 
 all-share: static/main.min.css
+
+GIT_GRAPHQL_QUERIES != echo mansrht/git/*.graphql
+
+ariadne/git.toml: ariadne/git.toml.in
+	sed \
+		-e 's:@ASSETS@:$(ASSETS):g' \
+		< $< > $@
+
+mansrht/git/__init__.py: ariadne/git.toml $(GIT_GRAPHQL_QUERIES)
+	$(ARIADNE_CODEGEN) --config ariadne/git.toml
+
+all-python: mansrht/git/__init__.py
 
 install-bin: all-bin
 	mkdir -p $(BINDIR)
@@ -45,9 +59,13 @@ clean-bin:
 clean-share:
 	rm -f static/main.min.css static/main.css
 
-.PHONY: all all-bin all-share
+clean-python:
+	rm -rf mansrht/git/*.py mansrht/git/__pycache__
+	rm -f ariadne/*.toml
+
+.PHONY: all all-bin all-share all-python
 .PHONY: install install-bin install-share
-.PHONY: clean clean-bin clean-share
+.PHONY: clean clean-bin clean-share clean-python
 
 static/main.css: scss/main.scss
 	mkdir -p $(@D)

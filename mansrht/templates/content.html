@@ -7,6 +7,7 @@
 {% endif %}
 {% endblock %}
 {% block content %}
+{% set web_url = git_repo_url(repo) %}
 {% if not is_root or len(path) != 0 %}
 <div class="header-tabbed">
   <div class="container">
@@ -104,6 +105,7 @@ Date:   {{ commit.author.time }}
       <dl>
         <dt><strong>Clone this wiki</strong>{{" (\"" ~ wiki.repo_ref ~ "\" branch)"}}</dt>
         <dd>
+          {% set clone_urls = git_clone_urls(repo) %}
           <a href={{ clone_urls.https }}>{{ clone_urls.https }}</a>
           <span class="text-muted pull-right">(read-only)</span><br />
           {{clone_urls.ssh}}

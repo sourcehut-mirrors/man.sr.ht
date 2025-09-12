@@ -1,11 +1,31 @@
-from mansrht.types import User, Visibility
-from srht.config import cfg
+from mansrht.types import User, Wiki, Visibility
+from srht.config import cfg, get_origin
 from srht.database import DbSession
 from srht.flask import SrhtFlask
 from urllib.parse import urlparse
 
 db = DbSession(cfg("man.sr.ht", "connection-string"))
 db.init()
+
+_git_origin = get_origin("git.sr.ht")
+_git_origin_ext = get_origin("git.sr.ht", external=True)
+_git_ssh_user = cfg("git.sr.ht", "ssh-user", "git")
+
+def git_repo_url(repo):
+    name = repo.name
+    if repo is Wiki:
+        name = wiki.repo_name
+    return f"{_git_origin_ext}/{repo.owner.canonical_name}/{repo.name}"
+
+def git_ref_url(repo, ref):
+    return f"{_git_origin_ext}/{repo.owner.canonical_name}/{repo.name}/tree/{ref.name}"
+
+def git_clone_urls(repo):
+    ssh_host = urlparse(_git_origin_ext).hostname
+    return {
+        "https": f"{_git_origin_ext}/{repo.owner.canonical_name}/{repo.name}",
+        "ssh": f"{_git_ssh_user}@{ssh_host}:{repo.owner.canonical_name}/{repo.name}",
+    }
 
 class ManApp(SrhtFlask):
     def __init__(self):
@@ -27,6 +47,9 @@ class ManApp(SrhtFlask):
         def inject():
             return {
                 "Visibility": Visibility,
+                "git_repo_url": git_repo_url,
+                "git_ref_url": git_ref_url,
+                "git_clone_urls": git_clone_urls,
             }
 
 app = ManApp()

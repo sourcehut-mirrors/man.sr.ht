@@ -23,6 +23,7 @@ include-package-data = false
 packages = [
     "mansrht",
     "mansrht.blueprints",
+    "mansrht.git",
     "mansrht.templates",
     "mansrht.types",
 ]

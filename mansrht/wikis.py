@@ -1,7 +1,7 @@
 import subprocess
 from srht.database import db
+from mansrht.git import Client
 from mansrht.types import Wiki, RootWiki
-from mansrht.repo import GitsrhtBackend
 import shutil
 import re
 import os
@@ -30,14 +30,15 @@ def is_root_wiki(wiki):
         return root_wiki.id == wiki.id
     return False
 
-def delete_wiki(wiki, owner, delete_from_backend=False):
-    backend = GitsrhtBackend(owner)
+def delete_wiki(wiki, delete_from_backend=False):
+    git_client = Client()
 
     # The repo is always removed from the backend table. Deletion of the actual
     # repo is done separately if the user asks for that to be done.
     if delete_from_backend:
         try:
-            backend.delete_repo(wiki.repo_name)
+            repo = git_client.get_repo(wiki.repo_name).me.repository
+            git_client.delete_repo(repo.id)
         except:
             pass # Presumably deleted by the user
 

@@ -8,15 +8,18 @@ from srht.markdown import SRHT_MARKDOWN_VERSION, markdown, extract_toc
 from srht.oauth import UserType, current_user
 from srht.cache import set_cache, get_cache
 from srht.crypto import encrypt_request_authorization
+from srht.graphql import InternalAuth
 from srht.validation import Validation
 from mansrht.access import UserAccess, check_access
-from mansrht.repo import GitsrhtBackend, MissingRepositoryError
+from mansrht.git import Client, ObjectType
+from mansrht.git import GetTreeMeRepositoryPath as TreeEntry
+from mansrht.git import GetTreeMeRepositoryPathObjectObject as GitObject
 from mansrht.types import User, Wiki, RootWiki
 from mansrht.wikis import is_root_wiki
 from prometheus_client import Counter
 from datetime import timedelta
 from markupsafe import Markup
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 import json
 import mimetypes
 import os
@@ -37,69 +40,118 @@ metrics = type("metrics", tuple(), {
     ]
 })
 
-def content(wiki, path, is_root=False, **kwargs):
-    backend = GitsrhtBackend(wiki.owner)
+class MissingRepositoryError(Exception):
+    pass
 
-    ssh_host = urlparse(backend.origin_ext).hostname
-    clone_urls = {
-            "https": f"{backend.origin}/{wiki.owner}/{wiki.repo_name}",
-            "ssh": f"{backend.ssh_user}@{ssh_host}:{wiki.owner}/{wiki.repo_name}",
-    }
+class MissingReferenceError(Exception):
+    pass
 
-    web_url = f"{backend.origin}/{wiki.owner.canonical_name}/{wiki.repo_name}"
+def get_root_tree(git_client, wiki):
+    """
+    The root tree (/) in any given git repository is unique because it is not
+    itself situated within a parent tree (and is unnamed). We construct a fake
+    tree entry here to handle this special case.
+    """
+    ref = f"refs/heads/{wiki.repo_ref}"
+    repo = git_client.get_root_tree(wiki.repo_name, ref).me.repository
+    if not repo:
+        raise MissingRepositoryError()
 
-    if not path:
+    ref = repo.reference
+    tree = GitObject(typename__="Tree", id="-1", type=ObjectType.TREE)
+    return repo, TreeEntry(name="/", object=tree), ref.commit
+
+def get_page(wiki, path, is_root=False):
+    """
+    Fetch the wiki page at the given path. Also fetches the latest commit
+    details from git.sr.ht for good measure, to reduce GraphQL round-trips.
+    """
+    git_client = Client(InternalAuth(user=wiki.owner))
+    branch = wiki.repo_ref
+    ref = f"refs/heads/{branch}"
+
+    if path is None:
         path = ""
 
-    n = 0
-    try:
-        item, commit = backend.get_tree_entry(wiki.repo_name, wiki.repo_ref, path=path)
-    except MissingRepositoryError:
-        if current_user == wiki.owner:
-            return render_template("missing-repo.html",
-                wiki=wiki, backend=backend)
-        abort(404)
+    if not path:
+        # Special case
+        repo, item, commit = get_root_tree(git_client, wiki)
+    else:
+        repo = git_client.get_tree(wiki.repo_name,
+            ref, branch, path.rstrip("/")).me.repository
+        if not repo:
+            raise MissingRepositoryError()
+        item, commit = repo.path, repo.reference.commit
 
     if not commit:
-        return render_template("new-wiki.html",
-            wiki=wiki, clone_urls=clone_urls, web_url=web_url)
+        raise MissingReferenceError()
 
-    if item and item["object"]["type"] == "TREE" and not request.path.endswith("/"):
-        if not is_root or path != "":
-            return redirect(request.path + "/")
+    n = 0
+    # If /foo resolves to a tree:
+    # 1. Redirect /foo => /foo/
+    # 2. Look up /foo/index.md
+    # 3. Account for /foo/index.md/ being a possibility
+    while item and item.object.type == ObjectType.TREE and n < 5:
+        if not request.path.endswith("/") and (not is_root or path != ""):
+            abort(redirect(request.path + "/"))
 
-    while item and item["object"]["type"] == "TREE" and n < 5:
-        item, commit = backend.get_tree_entry(wiki.repo_name, wiki.repo_ref,
-            path=os.path.join(path, "index.md"))
+        index_md = os.path.join(path, "index.md")
+        index_html = os.path.join(path, "index.html")
+
+        repo = git_client.get_tree(wiki.repo_name,
+            ref, branch, index_md).me.repository
+        item, commit = repo.path, repo.reference.commit
+        path = index_md
+
+        # Also try index.html for the root wiki
         if not item and is_root:
-            item, commit = backend.get_tree_entry(wiki.repo_name, wiki.repo_ref,
-                path=os.path.join(path, "index.html"))
+            repo = git_client.get_tree(wiki.repo_name,
+                ref, branch, index_html).me.repository
+            item, commit = repo.path, repo.reference.commit
+            path = index_html
+
         n += 1
-    if not item or item["object"]["type"] != "BLOB":
+
+    # At this point we can definitively give up
+    if not item or item.object.type != ObjectType.BLOB:
+        abort(404)
+
+    return repo, item, commit
+
+def content(wiki, path, is_root=False):
+    try:
+        repo, item, commit = get_page(wiki, path, is_root)
+    except MissingRepositoryError:
+        if current_user == wiki.owner:
+            return render_template("missing-repo.html", wiki=wiki)
+        abort(404)
+    except MissingReferenceError:
+        if current_user == wiki.owner:
+            return render_template("new-wiki.html", wiki=wiki, repo=repo)
         abort(404)
 
     head, tail = os.path.split(path) if path else (None, None)
     path = tuple(p for p in (head, tail) if p)
 
-    blob_id = item["object"]["id"]
-    blob_name = item["name"]
-    cachekey = f"{wiki.repo_name}:{blob_id}"
+    cachekey = f"{wiki.repo_name}:{item.object.id}"
     html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v6"
     frontmatter_cachekey = f"man.sr.ht:frontmatter:{cachekey}"
     html = get_cache(html_cachekey)
     metrics.mansrht_markdown_cache_access.inc()
     if not html:
         metrics.mansrht_markdown_cache_miss.inc()
-        if not "text" in item["object"]:
+
+        if not hasattr(item.object, "text"):
             mimetype, enc = mimetypes.guess_type(path[-1] if path else "")
             if mimetype and mimetype.startswith('image/'):
-                url = item["object"]["content"]
+                url = item.object.content
                 auth = encrypt_request_authorization(user=current_user)
                 resp = requests.get(url, headers=auth, stream=True)
                 return send_file(resp.raw, mimetype=mimetype)
             else:
                 abort(404)
-        md = item["object"]["text"]
+
+        md = item.object.text
 
         frontmatter = dict()
         if md.startswith("---\n"):
@@ -120,13 +172,13 @@ def content(wiki, path, is_root=False, **kwargs):
                 frontmatter = dict()
 
         if is_root:
-            if blob_name.endswith(".html"):
+            if item.name.endswith(".html"):
                 html = Markup(md)
-            elif blob_name.endswith(".md"):
+            elif item.name.endswith(".md"):
                 html = markdown(md, baselevel=2, sanitize_output=False)
             else:
                 abort(404)
-        elif blob_name.endswith(".md"):
+        elif item.name.endswith(".md"):
             html = markdown(md, baselevel=2)
         else:
             abort(404)
@@ -155,8 +207,8 @@ def content(wiki, path, is_root=False, **kwargs):
     return render_template("content.html",
             content=Markup(soup), firstpara=Markup(firstpara),
             title=title, toc=toc, wiki=wiki, is_root=is_root,
-            path=path, frontmatter=frontmatter, clone_urls=clone_urls,
-            web_url=web_url, commit=commit, **kwargs)
+            path=path, frontmatter=frontmatter,
+            repo=repo, commit=commit)
 
 @html.route("/")
 @html.route("/<path:path>")

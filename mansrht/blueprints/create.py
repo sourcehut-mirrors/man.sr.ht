@@ -3,7 +3,8 @@ from srht.database import db
 from srht.flask import session
 from srht.oauth import current_user, loginrequired
 from srht.validation import Validation
-from mansrht.repo import GitsrhtBackend
+from mansrht.app import git_repo_url, git_ref_url
+from mansrht.git import Client
 from mansrht.types import Wiki, Visibility
 from mansrht.wikis import validate_name
 from collections import namedtuple
@@ -12,13 +13,13 @@ import os
 ListItem = namedtuple("ListItem", ["name", "url"])
 create = Blueprint('create', __name__)
 
-def select_repo(backend, wiki_name, wiki_visibility, **kwargs):
-    repos, cursor = backend.get_repos()
+def select_repo(wiki_name, wiki_visibility, **kwargs):
+    # TODO: Pagination?
+    git_client = Client()
+    repos = git_client.get_repos().me.repositories
+    repos, cursor = repos.results, repos.cursor
 
-    repos = [
-        ListItem(repo["name"], backend.get_repo_url(repo["name"]))
-        for repo in repos
-    ]
+    repos = [ListItem(repo.name, git_repo_url(repo)) for repo in repos]
 
     existing = [
         wiki.repo_name
@@ -29,17 +30,24 @@ def select_repo(backend, wiki_name, wiki_visibility, **kwargs):
     return render_template(
             "select.html", typename="repo", typename_pretty="repo",
             default=wiki_name, default_visibility=wiki_visibility,
-            items=sorted(repos, key=lambda x: x.name),
-            existing=existing, **kwargs)
+            items=repos, existing=existing, **kwargs)
 
-def select_ref(backend, wiki_name, repo_name, repo_visibility, new_repo, **kwargs):
-    refs = []
+def select_ref(wiki_name, repo_name, repo_visibility, new_repo, **kwargs):
+    git_client = Client()
+
     if not new_repo:
-        refs, cursor = backend.get_refs(repo_name)
-    if refs:
-        refs = [ListItem(
-            os.path.split(ref["name"])[1],
-            backend.get_ref_url(repo_name, ref["name"])) for ref in refs]
+        # TODO: Pagination?
+        repo = git_client.get_references(repo_name).me.repository
+        refs, cursor = repo.references, repo.references.cursor
+        refs, cursor = refs.results, refs.cursor
+        refs = [
+            ListItem(os.path.split(ref.name)[1], git_ref_url(repo, ref))
+            for ref in refs
+            if ref.name.startswith("refs/heads/")
+        ]
+    else:
+        refs = []
+        repo = git_client.get_repo(repo_name).me.repository
 
     # TODO: Add cancel button.
     return render_template(
@@ -76,8 +84,7 @@ def select_repo_GET():
     wiki_visibility = Visibility(session.get("wiki_visibility", "PRIVATE"))
     if not wiki_name:
         return redirect("/wiki/create")
-    backend = GitsrhtBackend(current_user)
-    return select_repo(backend, wiki_name, wiki_visibility)
+    return select_repo(wiki_name, wiki_visibility)
 
 @create.route("/wiki/create/repo", methods=["POST"])
 @create.route("/wiki/create/repo/new", methods=["POST"])
@@ -88,10 +95,9 @@ def select_repo_POST():
     # will not be set (and does not matter) if existing repo selected
     repo_visibility = valid.optional("visibility", default="PUBLIC")
     if not valid.ok:
-        backend = GitsrhtBackend(current_user)
         wiki_name = session.get("wiki_name")
         visibility = Visibility(session.get("wiki_visibility", "PRIVATE"))
-        return select_repo(backend, wiki_name, visibility, **valid.kwargs)
+        return select_repo(wiki_name, visibility, **valid.kwargs)
 
     # The repo name is checked at the end of the form.
     session["wiki_repo"] = (repo_name, repo_visibility, request.path.endswith("new"))
@@ -107,9 +113,8 @@ def select_ref_GET():
         session.pop("wiki_repo", None)
         return redirect("/wiki/create")
 
-    backend = GitsrhtBackend(current_user)
     repo_name, repo_visibility, new_repo = wiki_repo
-    return select_ref(backend, wiki_name, repo_name, repo_visibility, new_repo)
+    return select_ref(wiki_name, repo_name, repo_visibility, new_repo)
 
 @create.route("/wiki/create/ref", methods=["POST"])
 @create.route("/wiki/create/ref/new", methods=["POST"])
@@ -125,31 +130,31 @@ def select_ref_POST():
     is_root = session.get("configure_root", False)
     visibility = Visibility(session.get("wiki_visibility", "PRIVATE"))
     repo_name, repo_visibility, new_repo = wiki_repo
-    backend = GitsrhtBackend(current_user)
 
     valid = Validation(request)
     ref_name = valid.require("ref", friendly_name="Ref")
     if not valid.ok:
-        return select_ref(backend, wiki_name, repo_name,
+        return select_ref(wiki_name, repo_name,
                 repo_visibility, new_repo, **valid.kwargs)
 
-    backend_repo = backend.get_repo(repo_name)
+    git_client = Client()
+    git_repo = git_client.get_repo(repo_name).me.repository
     if new_repo:
         # Check if a repo with the same name already exists.
         # If it does, we treat it as an error.
-        valid.expect(
-                backend_repo is None,
+        valid.expect(git_repo is None,
                 "Repository already exists.",
                 field="repo")
         if not valid.ok:
-            return select_repo(backend, wiki_name, visibility.value, **valid.kwargs)
-        backend_repo = backend.create_repo(repo_name, repo_visibility)
+            return select_repo(wiki_name, visibility.value, **valid.kwargs)
+        git_repo = git_client.create_repo(
+            repo_name, repo_visibility).repository
 
     wiki = Wiki()
     wiki.name = wiki_name
     wiki.owner_id = current_user.id
     wiki.visibility = visibility
-    wiki.repo_name = backend_repo["name"]
+    wiki.repo_name = git_repo.name
     wiki.repo_ref = ref_name
     db.session.add(wiki)
 

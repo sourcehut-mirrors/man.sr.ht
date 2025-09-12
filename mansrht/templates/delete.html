@@ -17,7 +17,7 @@
           owner_name=owner.username, wiki_name=wiki.name) }}"
       >Nevermind</a>
       <label class="form-check-label" style="margin-left: 2rem">
-        {% set repo_url = backend.get_repo_url(wiki.repo_name) %}
+        {% set repo_url = git_repo_url(wiki) %}
         <input
           class="form-check-input"
           type="checkbox"
