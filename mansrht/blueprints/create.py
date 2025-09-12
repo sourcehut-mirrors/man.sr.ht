@@ -66,14 +66,14 @@ def create_POST():
             default="PUBLIC",
             cls=Visibility)
     session["wiki_name"] = wiki_name
-    session["wiki_visibility"] = visibility.name
+    session["wiki_visibility"] = visibility.value
     return redirect("/wiki/create/repo")
 
 @create.route("/wiki/create/repo")
 @loginrequired
 def select_repo_GET():
     wiki_name = session.get("wiki_name")
-    wiki_visibility = Visibility(session.get("wiki_visibility"))
+    wiki_visibility = Visibility(session.get("wiki_visibility", "PRIVATE"))
     if not wiki_name:
         return redirect("/wiki/create")
     backend = GitsrhtBackend(current_user)
@@ -90,7 +90,7 @@ def select_repo_POST():
     if not valid.ok:
         backend = GitsrhtBackend(current_user)
         wiki_name = session.get("wiki_name")
-        visibility = Visibility(session.get("wiki_visibility"))
+        visibility = Visibility(session.get("wiki_visibility", "PRIVATE"))
         return select_repo(backend, wiki_name, visibility, **valid.kwargs)
 
     # The repo name is checked at the end of the form.
@@ -123,7 +123,7 @@ def select_ref_POST():
         return redirect("/wiki/create")
 
     is_root = session.get("configure_root", False)
-    visibility = Visibility(session.get("wiki_visibility", "PUBLIC"))
+    visibility = Visibility(session.get("wiki_visibility", "PRIVATE"))
     repo_name, repo_visibility, new_repo = wiki_repo
     backend = GitsrhtBackend(current_user)
 
