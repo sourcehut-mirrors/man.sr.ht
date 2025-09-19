@@ -56,6 +56,8 @@ def get_root_tree(git_client, wiki):
     repo = git_client.get_root_tree(wiki.repo_name, ref).me.repository
     if not repo:
         raise MissingRepositoryError()
+    if not repo.reference:
+        raise MissingReferenceError()
 
     ref = repo.reference
     tree = GitObject(typename__="Tree", id="-1", type=ObjectType.TREE)
