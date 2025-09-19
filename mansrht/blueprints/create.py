@@ -4,7 +4,7 @@ from srht.flask import session
 from srht.oauth import current_user, loginrequired
 from srht.validation import Validation
 from mansrht.app import git_repo_url, git_ref_url
-from mansrht.git import Client
+from mansrht.git import GitClient
 from mansrht.types import Wiki, Visibility
 from mansrht.wikis import validate_name
 from collections import namedtuple
@@ -15,7 +15,7 @@ create = Blueprint('create', __name__)
 
 def select_repo(wiki_name, wiki_visibility, **kwargs):
     # TODO: Pagination?
-    git_client = Client()
+    git_client = GitClient()
     repos = git_client.get_repos().me.repositories
     repos, cursor = repos.results, repos.cursor
 
@@ -33,7 +33,7 @@ def select_repo(wiki_name, wiki_visibility, **kwargs):
             items=repos, existing=existing, **kwargs)
 
 def select_ref(wiki_name, repo_name, repo_visibility, new_repo, **kwargs):
-    git_client = Client()
+    git_client = GitClient()
 
     if not new_repo:
         # TODO: Pagination?
@@ -137,7 +137,7 @@ def select_ref_POST():
         return select_ref(wiki_name, repo_name,
                 repo_visibility, new_repo, **valid.kwargs)
 
-    git_client = Client()
+    git_client = GitClient()
     git_repo = git_client.get_repo(repo_name).me.repository
     if new_repo:
         # Check if a repo with the same name already exists.

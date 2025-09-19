@@ -1,5 +1,6 @@
 [tool.ariadne-codegen]
 async_client = false
+client_name = "GitClient"
 schema_path = "@ASSETS@/git.sr.ht.graphqls"
 queries_path = "mansrht/git/"
 target_package_path = "mansrht/"

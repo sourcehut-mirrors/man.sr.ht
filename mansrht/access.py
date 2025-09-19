@@ -1,7 +1,7 @@
 from flask import abort, request
 from datetime import datetime
 from enum import IntFlag
-from mansrht.git import Client, AccessMode
+from mansrht.git import GitClient, AccessMode
 from mansrht.types import User, Wiki, Visibility
 from srht.database import db
 from srht.graphql import InternalAuth
@@ -32,7 +32,7 @@ def get_repo_access(wiki, owner, user=None):
         user = current_user
 
     try:
-        git_client = Client(InternalAuth(user=user))
+        git_client = GitClient(InternalAuth(user=user))
         access = git_client.get_repo_access(
             owner.username, wiki.repo_name).user.repository.access
     except:

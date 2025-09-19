@@ -11,7 +11,7 @@ from srht.crypto import encrypt_request_authorization
 from srht.graphql import InternalAuth
 from srht.validation import Validation
 from mansrht.access import UserAccess, check_access
-from mansrht.git import Client, ObjectType
+from mansrht.git import GitClient, ObjectType
 from mansrht.git import GetTreeMeRepositoryPath as TreeEntry
 from mansrht.git import GetTreeMeRepositoryPathObjectObject as GitObject
 from mansrht.types import User, Wiki, RootWiki
@@ -68,7 +68,7 @@ def get_page(wiki, path, is_root=False):
     Fetch the wiki page at the given path. Also fetches the latest commit
     details from git.sr.ht for good measure, to reduce GraphQL round-trips.
     """
-    git_client = Client(InternalAuth(user=wiki.owner))
+    git_client = GitClient(InternalAuth(user=wiki.owner))
     branch = wiki.repo_ref
     ref = f"refs/heads/{branch}"
 
