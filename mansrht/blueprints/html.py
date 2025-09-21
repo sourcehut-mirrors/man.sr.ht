@@ -129,7 +129,7 @@ def content(wiki, path, is_root=False):
         abort(404)
     except MissingReferenceError:
         if current_user == wiki.owner:
-            return render_template("new-wiki.html", wiki=wiki, repo=repo)
+            return render_template("new-wiki.html", wiki=wiki)
         abort(404)
 
     head, tail = os.path.split(path) if path else (None, None)
