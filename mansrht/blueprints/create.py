@@ -94,6 +94,7 @@ def select_repo_POST():
     repo_name = valid.require("repo", friendly_name="Repo")
     # will not be set (and does not matter) if existing repo selected
     repo_visibility = valid.optional("visibility", default="PUBLIC")
+    validate_name(valid, current_user, repo_name, repo=True, field="repo")
     if not valid.ok:
         wiki_name = session.get("wiki_name")
         visibility = Visibility(session.get("wiki_visibility", "PRIVATE"))
@@ -147,8 +148,12 @@ def select_ref_POST():
                 field="repo")
         if not valid.ok:
             return select_repo(wiki_name, visibility.value, **valid.kwargs)
-        git_repo = git_client.create_repo(
-            repo_name, repo_visibility).repository
+        with valid:
+            git_repo = git_client.create_repo(
+                repo_name, repo_visibility).repository
+        if not valid.ok:
+            return select_ref(wiki_name, repo_name,
+                    repo_visibility, new_repo, **valid.kwargs)
 
     wiki = Wiki()
     wiki.name = wiki_name

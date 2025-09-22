@@ -6,20 +6,21 @@ import shutil
 import re
 import os
 
-def validate_name(valid, owner, wiki_name):
+def validate_name(valid, owner, wiki_name, repo=False, field="name"):
     if not valid.ok:
         return None
     valid.expect(re.match(r'^[A-Za-z0-9._-]+$', wiki_name),
-            "Name must match [A-Za-z0-9._-]+", field="name")
+            "Name must match [A-Za-z0-9._-]+", field)
     valid.expect(wiki_name not in [".", ".."],
-            "Name cannot be '.' or '..'", field="name")
+            "Name cannot be '.' or '..'", field)
     valid.expect(wiki_name not in [".git", ".hg"],
-            "Name must not be '.git' or '.hg'", field="name")
-    existing = (Wiki.query
-            .filter(Wiki.owner_id == owner.id)
-            .filter(Wiki.name.ilike(wiki_name.replace('_', '\\_')))
-            .first())
-    valid.expect(not existing, "This name is already in use.", field="name")
+            "Name must not be '.git' or '.hg'", field)
+    if not repo:
+        existing = (Wiki.query
+                .filter(Wiki.owner_id == owner.id)
+                .filter(Wiki.name.ilike(wiki_name.replace('_', '\\_')))
+                .first())
+        valid.expect(not existing, "This name is already in use.", field)
     return None
 
 def is_root_wiki(wiki):
