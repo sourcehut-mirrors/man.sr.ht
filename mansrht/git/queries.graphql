@@ -3,11 +3,7 @@ query GetRepos($cursor: Cursor) {
     repositories(cursor: $cursor) {
       cursor
       results {
-        id
-        name
-        owner {
-          canonicalName
-        }
+        ... repoDetails
       }
     }
   }
@@ -16,11 +12,7 @@ query GetRepos($cursor: Cursor) {
 query GetRepo($name: String!) {
   me {
     repository(name: $name) {
-      id
-      name
-      owner {
-        canonicalName
-      }
+      ... repoDetails
     }
   }
 }
@@ -36,11 +28,6 @@ query GetRepoAccess($owner: String!, $repo: String!) {
 query GetReferences($name: String!, $cursor: Cursor) {
   me {
     repository(name: $name) {
-      id
-      name
-      owner {
-        canonicalName
-      }
 
       references(cursor: $cursor) {
         cursor
@@ -55,6 +42,8 @@ query GetReferences($name: String!, $cursor: Cursor) {
 query GetRootTree($name: String!, $ref: String!) {
   me {
     repository(name: $name) {
+      ... repoDetails
+
       reference(name: $ref) {
         commit: follow {
           ... on Commit { ... commitDetails }
@@ -67,11 +56,7 @@ query GetRootTree($name: String!, $ref: String!) {
 query GetTree($name: String!, $ref: String!, $branch: String!, $path: String!) {
   me {
     repository(name: $name) {
-      id
-      name
-      owner {
-        canonicalName
-      }
+      ... repoDetails
 
       path(revspec: $branch, path: $path) {
         name
@@ -97,6 +82,17 @@ query GetTree($name: String!, $ref: String!, $branch: String!, $path: String!) {
   }
 }
 
+mutation CreateRepo($name: String!, $visibility: Visibility!) {
+  repository: createRepository(name: $name, visibility: $visibility) {
+    id
+    name
+  }
+}
+
+mutation DeleteRepo($id: Int!) {
+  deleteRepository(id: $id) { id }
+}
+
 fragment commitDetails on Commit {
   id
   message
@@ -107,13 +103,11 @@ fragment commitDetails on Commit {
   }
 }
 
-mutation CreateRepo($name: String!, $visibility: Visibility!) {
-  repository: createRepository(name: $name, visibility: $visibility) {
-    id
-    name
+fragment repoDetails on Repository {
+  id
+  name
+  owner {
+    __typename
+    canonicalName
   }
-}
-
-mutation DeleteRepo($id: Int!) {
-  deleteRepository(id: $id) { id }
 }

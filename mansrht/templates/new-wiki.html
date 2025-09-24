@@ -1,4 +1,6 @@
 {% extends "man.html" %}
+{% set clone_urls = git_clone_urls(repo) %}
+{% set web_url = git_repo_url(repo) %}
 {% block content %}
 <div class="container">
   <div class="row">

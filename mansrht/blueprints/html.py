@@ -44,7 +44,8 @@ class MissingRepositoryError(Exception):
     pass
 
 class MissingReferenceError(Exception):
-    pass
+    def __init__(self, repo):
+        self.repo = repo
 
 def get_root_tree(git_client, wiki):
     """
@@ -55,9 +56,9 @@ def get_root_tree(git_client, wiki):
     ref = f"refs/heads/{wiki.repo_ref}"
     repo = git_client.get_root_tree(wiki.repo_name, ref).me.repository
     if not repo:
-        raise MissingRepositoryError()
+        raise MissingRepositoryError
     if not repo.reference:
-        raise MissingReferenceError()
+        raise MissingReferenceError(repo)
 
     ref = repo.reference
     tree = GitObject(typename__="Tree", id="-1", type=ObjectType.TREE)
@@ -82,11 +83,11 @@ def get_page(wiki, path, is_root=False):
         repo = git_client.get_tree(wiki.repo_name,
             ref, branch, path.rstrip("/")).me.repository
         if not repo:
-            raise MissingRepositoryError()
+            raise MissingRepositoryError
         item, commit = repo.path, repo.reference.commit
 
     if not commit:
-        raise MissingReferenceError()
+        raise MissingReferenceError(repo)
 
     n = 0
     # If /foo resolves to a tree:
@@ -127,9 +128,9 @@ def content(wiki, path, is_root=False):
         if current_user == wiki.owner:
             return render_template("missing-repo.html", wiki=wiki)
         abort(404)
-    except MissingReferenceError:
+    except MissingReferenceError as err:
         if current_user == wiki.owner:
-            return render_template("new-wiki.html", wiki=wiki)
+            return render_template("new-wiki.html", wiki=wiki, repo=err.repo)
         abort(404)
 
     head, tail = os.path.split(path) if path else (None, None)
