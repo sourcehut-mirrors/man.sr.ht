@@ -162,6 +162,7 @@ def select_ref_POST():
     wiki.repo_name = git_repo.name
     wiki.repo_ref = ref_name
     db.session.add(wiki)
+    db.session.flush()
 
     if is_root:
         root_wiki = RootWiki(id=wiki.id)
