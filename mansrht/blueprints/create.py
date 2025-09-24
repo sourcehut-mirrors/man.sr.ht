@@ -5,7 +5,7 @@ from srht.oauth import current_user, loginrequired
 from srht.validation import Validation
 from mansrht.app import git_repo_url, git_ref_url
 from mansrht.git import GitClient
-from mansrht.types import Wiki, Visibility
+from mansrht.types import Wiki, Visibility, RootWiki
 from mansrht.wikis import validate_name
 from collections import namedtuple
 import os
