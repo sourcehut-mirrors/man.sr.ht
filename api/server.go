@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"git.sr.ht/~sircmpwn/core-go/config"
 	"git.sr.ht/~sircmpwn/core-go/server"
 	work "git.sr.ht/~sircmpwn/dowork"
@@ -11,7 +13,7 @@ import (
 )
 
 func main() {
-	appConfig := config.LoadConfig(":5104")
+	appConfig := config.LoadConfig()
 
 	gqlConfig := api.Config{Resolvers: &graph.Resolver{}}
 	gqlConfig.Directives.Internal = server.Internal
@@ -24,7 +26,7 @@ func main() {
 		"account-del-queue-size", config.DefaultQueueSize)
 	accountQueue := work.NewQueue("account", queueSize)
 
-	gsrv := server.NewServer("man.sr.ht", appConfig).
+	gsrv := server.New("man.sr.ht", ":5104", appConfig, os.Args).
 		WithDefaultMiddleware().
 		WithMiddleware(
 			account.Middleware(accountQueue),
