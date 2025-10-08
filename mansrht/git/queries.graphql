@@ -28,6 +28,7 @@ query GetRepoAccess($owner: String!, $repo: String!) {
 query GetReferences($name: String!, $cursor: Cursor) {
   me {
     repository(name: $name) {
+      ... repoDetails
 
       references(cursor: $cursor) {
         cursor
