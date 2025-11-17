@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, abort, request
-from srht.flask import paginate_query
+from srht.app import paginate_query
 from srht.search import search_by
 from srht.oauth import current_user
 from mansrht.types import User, Wiki, Visibility

@@ -1,9 +1,8 @@
 from io import BytesIO
 from bs4 import BeautifulSoup
-from flask import (
-    Blueprint, url_for, render_template, abort, request, redirect, send_file,
-)
-from srht.flask import session, date_handler
+from flask import Blueprint, render_template, abort, request, redirect
+from flask import send_file
+from srht.app import session, date_handler
 from srht.markdown import SRHT_MARKDOWN_VERSION, markdown, extract_toc
 from srht.oauth import UserType, current_user
 from srht.cache import set_cache, get_cache

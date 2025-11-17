@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, abort, request, redirect
+from srht.app import session
 from srht.database import db
-from srht.flask import session
 from srht.oauth import current_user, loginrequired
 from srht.validation import Validation
 from mansrht.app import git_repo_url, git_ref_url

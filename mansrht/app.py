@@ -1,7 +1,7 @@
 from mansrht.types import User, Wiki, Visibility
+from srht.app import Flask
 from srht.config import cfg, get_origin
 from srht.database import DbSession
-from srht.flask import SrhtFlask
 from urllib.parse import urlparse
 
 db = DbSession(cfg("man.sr.ht", "connection-string"))
@@ -27,7 +27,7 @@ def git_clone_urls(repo):
         "ssh": f"{_git_ssh_user}@{ssh_host}:{repo.owner.canonical_name}/{repo.name}",
     }
 
-class ManApp(SrhtFlask):
+class ManApp(Flask):
     def __init__(self):
         super().__init__("man.sr.ht", __name__, user_class=User)
 
