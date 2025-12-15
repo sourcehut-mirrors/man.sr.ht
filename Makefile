@@ -84,7 +84,7 @@ api/graph/api/generated.go: api/graph/schema.graphqls api/graph/generate.go go.s
 	cd api && go generate ./graph
 
 $(SERVICE)-api: api/graph/api/generated.go
-	go build -o $@ $(GO_LDFLAGS) ./api
+	go build -o $@ $(GO_LDFLAGS) ./cmd/api
 
 # Always rebuild
 .PHONY: $(BINARIES)
