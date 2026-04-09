@@ -61,9 +61,9 @@ query GetTree($name: String!, $ref: String!, $branch: String!, $path: String!) {
 
       path(revspec: $branch, path: $path) {
         name
-        object_: object {
+        object {
           id
-          type_: type
+          type
 
           ... on BinaryBlob {
             content

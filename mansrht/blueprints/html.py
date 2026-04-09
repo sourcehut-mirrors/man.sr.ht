@@ -93,7 +93,7 @@ def get_page(wiki, path, is_root=False):
     # 1. Redirect /foo => /foo/
     # 2. Look up /foo/index.md
     # 3. Account for /foo/index.md/ being a possibility
-    while item and item.object_.type_ == ObjectType.TREE and n < 5:
+    while item and item.object.type == ObjectType.TREE and n < 5:
         if not request.path.endswith("/") and (not is_root or path != ""):
             abort(redirect(request.path + "/"))
 
@@ -115,7 +115,7 @@ def get_page(wiki, path, is_root=False):
         n += 1
 
     # At this point we can definitively give up
-    if not item or item.object_.type_ != ObjectType.BLOB:
+    if not item or item.object.type != ObjectType.BLOB:
         abort(404)
 
     return repo, item, commit
@@ -135,7 +135,7 @@ def content(wiki, path, is_root=False):
     head, tail = os.path.split(path) if path else (None, None)
     path = tuple(p for p in (head, tail) if p)
 
-    cachekey = f"{wiki.repo_name}:{item.object_.id}"
+    cachekey = f"{wiki.repo_name}:{item.object.id}"
     html_cachekey = f"man.sr.ht:content:{cachekey}:v{SRHT_MARKDOWN_VERSION}:v6"
     frontmatter_cachekey = f"man.sr.ht:frontmatter:{cachekey}"
     html = get_cache(html_cachekey)
@@ -143,17 +143,17 @@ def content(wiki, path, is_root=False):
     if not html:
         metrics.mansrht_markdown_cache_miss.inc()
 
-        if not hasattr(item.object_, "text"):
+        if not hasattr(item.object, "text"):
             mimetype, enc = mimetypes.guess_type(path[-1] if path else "")
             if mimetype and mimetype.startswith('image/'):
-                url = item.object_.content
+                url = item.object.content
                 auth = encrypt_request_authorization(user=current_user)
                 resp = requests.get(url, headers=auth, stream=True)
                 return send_file(resp.raw, mimetype=mimetype)
             else:
                 abort(404)
 
-        md = item.object_.text
+        md = item.object.text
 
         frontmatter = dict()
         if md.startswith("---\n"):
