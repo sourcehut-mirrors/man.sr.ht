@@ -7,12 +7,13 @@ from srht.markdown import SRHT_MARKDOWN_VERSION, markdown, extract_toc
 from srht.oauth import UserType, current_user
 from srht.cache import set_cache, get_cache
 from srht.crypto import encrypt_request_authorization
-from srht.graphql import InternalAuth
+from srht.graphql import InternalAuth, Error, has_error, get_redirect
 from srht.validation import Validation
 from mansrht.access import UserAccess, check_access
 from mansrht.git import GitClient, ObjectType
 from mansrht.git import GetTreeMeRepositoryPath as TreeEntry
 from mansrht.git import GetTreeMeRepositoryPathObjectObject as GitObject
+from mansrht.git.exceptions import GraphQLClientGraphQLMultiError
 from mansrht.types import User, Wiki, RootWiki
 from mansrht.wikis import is_root_wiki
 from prometheus_client import Counter
@@ -53,7 +54,14 @@ def get_root_tree(git_client, wiki):
     tree entry here to handle this special case.
     """
     ref = f"refs/heads/{wiki.repo_ref}"
-    repo = git_client.get_root_tree(wiki.repo_name, ref).me.repository
+    try:
+        repo = git_client.get_root_tree(wiki.repo_name, ref).me.repository
+    except GraphQLClientGraphQLMultiError as err:
+        if has_error(err, Error.REDIRECT):
+            new_name = get_redirect(err)[1]
+            repo = git_client.get_root_tree(new_name, ref).me.repository
+        else:
+            raise
     if not repo:
         raise MissingRepositoryError
     if not repo.reference:
@@ -79,14 +87,25 @@ def get_page(wiki, path, is_root=False):
         # Special case
         repo, item, commit = get_root_tree(git_client, wiki)
     else:
-        repo = git_client.get_tree(wiki.repo_name,
-            ref, branch, path.rstrip("/")).me.repository
+        try:
+            repo = git_client.get_tree(repo_name,
+                ref, branch, path.rstrip("/")).me.repository
+        except GraphQLClientGraphQLMultiError as err:
+            if has_error(err, Error.REDIRECT):
+                new_name = get_redirect(err)[1]
+                repo = git_client.get_tree(new_name,
+                    ref, branch, path.rstrip("/")).me.repository
+            else:
+                raise
         if not repo:
             raise MissingRepositoryError
         item, commit = repo.path, repo.reference.commit
 
     if not commit:
         raise MissingReferenceError(repo)
+
+    # In case of redirects, this is different from wiki.repo_name
+    repo_name = repo.name
 
     n = 0
     # If /foo resolves to a tree:
@@ -100,14 +119,14 @@ def get_page(wiki, path, is_root=False):
         index_md = os.path.join(path, "index.md")
         index_html = os.path.join(path, "index.html")
 
-        repo = git_client.get_tree(wiki.repo_name,
+        repo = git_client.get_tree(repo_name,
             ref, branch, index_md).me.repository
         item, commit = repo.path, repo.reference.commit
         path = index_md
 
         # Also try index.html for the root wiki
         if not item and is_root:
-            repo = git_client.get_tree(wiki.repo_name,
+            repo = git_client.get_tree(repo_name,
                 ref, branch, index_html).me.repository
             item, commit = repo.path, repo.reference.commit
             path = index_html
