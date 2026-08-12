@@ -13,9 +13,9 @@ _git_ssh_user = cfg("git.sr.ht", "ssh-user", "git")
 
 def git_repo_url(repo):
     name = repo.name
-    if repo is Wiki:
-        name = wiki.repo_name
-    return f"{_git_origin_ext}/{repo.owner.canonical_name}/{repo.name}"
+    if isinstance(repo, Wiki):
+        name = repo.repo_name
+    return f"{_git_origin_ext}/{repo.owner.canonical_name}/{name}"
 
 def git_ref_url(repo, ref):
     return f"{_git_origin_ext}/{repo.owner.canonical_name}/{repo.name}/tree/{ref.name}"
