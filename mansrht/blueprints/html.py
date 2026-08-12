@@ -88,7 +88,7 @@ def get_page(wiki, path, is_root=False):
         repo, item, commit = get_root_tree(git_client, wiki)
     else:
         try:
-            repo = git_client.get_tree(repo_name,
+            repo = git_client.get_tree(wiki.repo_name,
                 ref, branch, path.rstrip("/")).me.repository
         except GraphQLClientGraphQLMultiError as err:
             if has_error(err, Error.REDIRECT):
