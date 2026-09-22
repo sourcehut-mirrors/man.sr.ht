@@ -1,7 +1,7 @@
 from io import BytesIO
 from bs4 import BeautifulSoup
 from flask import Blueprint, render_template, abort, request, redirect
-from flask import send_file
+from flask import send_file, Response
 from srht.app import session, date_handler
 from srht.markdown import SRHT_MARKDOWN_VERSION, markdown, extract_toc
 from srht.oauth import UserType, current_user
@@ -162,15 +162,18 @@ def content(wiki, path, is_root=False):
     if not html:
         metrics.mansrht_markdown_cache_miss.inc()
 
-        if not hasattr(item.object, "text"):
-            mimetype, enc = mimetypes.guess_type(path[-1] if path else "")
-            if mimetype and mimetype.startswith('image/'):
+        mimetype, enc = mimetypes.guess_type(path[-1] if path else "")
+        if mimetype and mimetype.startswith('image/'):
+            if not hasattr(item.object, "text"):
                 url = item.object.content
                 auth = encrypt_request_authorization(user=current_user)
                 resp = requests.get(url, headers=auth, stream=True)
                 return send_file(resp.raw, mimetype=mimetype)
             else:
-                abort(404)
+                return Response(item.object.text, mimetype=mimetype)
+
+        if not hasattr(item.object, "text"):     
+            abort(404)
 
         md = item.object.text
 
