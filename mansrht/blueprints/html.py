@@ -11,6 +11,7 @@ from srht.graphql import InternalAuth, Error, has_error, get_redirect
 from srht.validation import Validation
 from mansrht.access import UserAccess, check_access
 from mansrht.git import GitClient, ObjectType
+from mansrht.git import GetTree
 from mansrht.git import GetTreeMeRepositoryPath as TreeEntry
 from mansrht.git import GetTreeMeRepositoryPathObjectObject as GitObject
 from mansrht.git.exceptions import GraphQLClientGraphQLMultiError
@@ -95,10 +96,18 @@ def get_page(wiki, path, is_root=False):
                 new_name = get_redirect(err)[1]
                 repo = git_client.get_tree(new_name,
                     ref, branch, path.rstrip("/")).me.repository
+            elif has_error(err, Error.NOT_FOUND):
+                # Figure out _what_ was not found to let owner know
+                if err.data:
+                    r = GetTree(**err.data)
+                    if r.me:
+                        repo = r.me.repository
             else:
                 raise
         if not repo:
             raise MissingRepositoryError
+        if not repo.reference:
+            raise MissingReferenceError(repo)
         item, commit = repo.path, repo.reference.commit
 
     if not commit:
